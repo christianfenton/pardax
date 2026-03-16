@@ -1,0 +1,20 @@
+[project]
+name = "pardax"
+version = "0.1.0"
+description = "A flexible solver interface for PDEs, written in JAX"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "equinox>=0.13.6",
+    "jax>=0.4.13",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=8.3.5",
+    "ruff>=0.15.6",
+]
+
+[tool.ruff]
+line-length = 79

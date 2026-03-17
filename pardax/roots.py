@@ -8,6 +8,7 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 
+from .type_aliases import RHS
 from .linearise import AbstractLineariser, AutoJVP
 
 
@@ -19,7 +20,7 @@ class AbstractRootFinder(eqx.Module):
         self,
         residual_fn: Callable[[Array], Array],
         y_guess: Array,
-        fun: Callable,
+        fun: RHS,
         t: Array,
         h: Array,
         args: tuple,
@@ -65,7 +66,7 @@ class NewtonRaphson(AbstractRootFinder):
         lineariser: AbstractLineariser = AutoJVP(),
         tol: float = 1e-6,
         maxiter: int = 50,
-    ):
+    ) -> None:
         self.lineariser = lineariser
         self.tol = tol
         self.maxiter = maxiter
@@ -74,7 +75,7 @@ class NewtonRaphson(AbstractRootFinder):
         self,
         residual_fn: Callable[[Array], Array],
         y_guess: Array,
-        fun: Callable,
+        fun: RHS,
         t: Array,
         h: Array,
         args: tuple,

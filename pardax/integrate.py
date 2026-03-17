@@ -1,18 +1,21 @@
 """Time integration using scan + fori_loop."""
 
-from typing import Tuple
+from typing import Tuple, Union
 
 import jax
 from jax import Array
 import jax.numpy as jnp
 
+from .type_aliases import RHS, SplitRHS
+from .stepper import AbstractStepper
+
 
 def solve_ivp(
-    fun,
+    fun: Union[RHS, SplitRHS],
     t_eval: Array,
     y0: Array,
-    method,
-    step_size: float,
+    stepper: AbstractStepper,
+    dt_max: float,
     args: tuple = ()
 ) -> Tuple[Array, Array]:
     """
@@ -23,8 +26,8 @@ def solve_ivp(
         t_eval: Times at which to return the solution. Must be sorted
             and include the initial time as the first element.
         y0: Initial condition at t_eval[0]
-        method: Time-stepping method instance (e.g., RK4(), BackwardEuler())
-        step_size: Maximum time step size
+        stepper: Time-stepper instance (e.g., RK4(), BackwardEuler())
+        dt_max: Maximum time step size
         args: Additional arguments to pass to fun
 
     Returns:
@@ -50,7 +53,7 @@ def solve_ivp(
     t_eval = jnp.asarray(t_eval)
 
     gaps = jnp.diff(t_eval)
-    steps_per_interval = jnp.ceil(gaps / step_size).astype(int)
+    steps_per_interval = jnp.ceil(gaps / dt_max).astype(int)
     dt_per_interval = gaps / steps_per_interval
 
     def step_to_time(carry, interval_info):
@@ -59,7 +62,7 @@ def solve_ivp(
 
         def body_fn(_, state):
             t, y = state
-            y_next = method.step(fun, t, y, dt, args)
+            y_next = stepper.step(fun, t, y, dt, args)
             return (t + dt, y_next)
 
         t, y = jax.lax.fori_loop(0, n_steps, body_fn, (t, y))

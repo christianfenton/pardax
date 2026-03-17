@@ -14,5 +14,11 @@ wheels/
 .pytest_cache
 .mypy_cache
 
-# Dev zone
+# Pytest coverage
+.coverage
+
+# Documentation build
+site/
+
+# Dev files
 sandbox/

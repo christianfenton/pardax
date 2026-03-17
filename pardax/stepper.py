@@ -1,9 +1,10 @@
 import abc
-from typing import Callable, Dict
+from typing import Union
 
 import equinox as eqx
 from jax import Array
 
+from .type_aliases import RHS, SplitRHS
 from .roots import AbstractRootFinder, NewtonRaphson
 
 
@@ -13,11 +14,11 @@ class AbstractStepper(eqx.Module):
     @abc.abstractmethod
     def step(
         self,
-        fun: Callable,
+        fun: Union[RHS, SplitRHS],
         t: Array,
         y: Array,
         h: Array,
-        args: tuple = ()
+        args: tuple = (),
     ) -> Array:
         """
         Take a single time step.
@@ -33,18 +34,13 @@ class AbstractStepper(eqx.Module):
             Solution at t + h
         """
         raise NotImplementedError
-    
+
 
 class ForwardEuler(AbstractStepper):
     """Forward Euler method."""
 
     def step(
-        self,
-        fun: Callable,
-        t: Array,
-        y: Array,
-        h: Array,
-        args: tuple = ()
+        self, fun: RHS, t: Array, y: Array, h: Array, args: tuple = ()
     ) -> Array:
         """
         Perform a single Forward Euler step.
@@ -68,12 +64,7 @@ class RK4(AbstractStepper):
     """Fourth (4th) order Runge-Kutta method."""
 
     def step(
-        self,
-        fun: Callable,
-        t: Array,
-        y: Array,
-        h: Array,
-        args: tuple = ()
+        self, fun: RHS, t: Array, y: Array, h: Array, args: tuple = ()
     ) -> Array:
         """
         Perform a single RK4 step.
@@ -93,28 +84,43 @@ class RK4(AbstractStepper):
         k3 = fun(t + 0.5 * h, y + 0.5 * h * k2, *args)
         k4 = fun(t + h, y + h * k3, *args)
         return y + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
-    
+
 
 class BackwardEuler(AbstractStepper):
-    """
-    Backward Euler time stepper.
+    """Backward Euler time stepper."""
 
-    Solves y_next = y_n + h * f(t_next, y_next, *args) at each time step.
-
-    The root finder owns the linearisation strategy, so BackwardEuler
-    only defines the residual and initial guess.
-    """
     root_finder: AbstractRootFinder
 
-    def __init__(self, root_finder: AbstractRootFinder = NewtonRaphson()):
+    def __init__(
+        self, root_finder: AbstractRootFinder = NewtonRaphson()
+    ) -> None:
         self.root_finder = root_finder
 
-    def step(self, fun, t, y, h, args=()):
+    def step(
+        self, fun: RHS, t: Array, y: Array, h: Array, args: tuple = ()
+    ) -> Array:
+        """
+        Perform a single backward Euler step.
+
+        Solves y_next = y_n + h * f(t_next, y_next, *args) at each time step.
+
+        Args:
+            fun: Right-hand side of system dy/dt = f(t, y, *args).
+            t: Current time.
+            y: Current solution.
+            h: Time step size.
+            args: Additional arguments to pass to fun.
+
+        Returns:
+            Solution at t + h.
+        """
+
         def residual(y_next):
             return y_next - y - h * fun(t + h, y_next, *args)
+
         y0 = y + h * fun(t, y, *args)
         return self.root_finder(residual, y0, fun=fun, t=t + h, h=h, args=args)
-    
+
 
 class IMEX(eqx.Module):
     """
@@ -149,16 +155,12 @@ class IMEX(eqx.Module):
         t, y = solve_ivp(ode, t_span, y0, stepper, step_size, args)
         ```
     """
+
     explicit: AbstractStepper
     implicit: AbstractStepper
 
     def step(
-        self,
-        fun: Dict[str, Callable],
-        t: Array,
-        y: Array,
-        h: Array,
-        args: tuple = ()
+        self, fun: SplitRHS, t: Array, y: Array, h: Array, args: tuple = ()
     ) -> Array:
         """
         Advance one time step.
@@ -176,5 +178,5 @@ class IMEX(eqx.Module):
         Returns:
             Solution at t + h.
         """
-        y_star = self.explicit.step(fun['explicit'], t, y, h, args)
-        return self.implicit.step(fun['implicit'], t, y_star, h, args)
+        y_star = self.explicit.step(fun["explicit"], t, y, h, args)
+        return self.implicit.step(fun["implicit"], t, y_star, h, args)

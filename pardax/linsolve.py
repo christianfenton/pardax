@@ -211,7 +211,7 @@ class Spectral(AbstractLinearSolver):
         forward: Callable[[Array], Array], 
         backward: Callable[[Array], Array], 
         constraint: Callable[[Array], Array] = _identity
-    ):
+    ) -> None:
         self.eigvals = eigvals
         self.forward = forward
         self.backward = backward

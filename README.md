@@ -4,7 +4,7 @@ A flexible solver interface for partial differential equations, written in JAX.
 
 ## Installation
 
-[Poetry](https://python-poetry.org/docs/) is recommended for installation.
+[uv](https://docs.astral.sh/uv/) is recommended for installation.
 
 ### Using uv
 
@@ -32,18 +32,46 @@ With HTTPS:
 pip install git+https://github.com/christianfenton/pardax.git
 ```
 
-## Tutorials
+## Quick start
 
-To get started using the package, check out the tutorials:
+```python
+import jax.numpy as jnp
+import pardax as pdx
 
-- **[Solving the heat equation](tutorials/heat_equation.md)**
+# 1. Define your discretised PDE as an ODE
+# NOTE: This must be written in a JAX-compatible (functionally pure) way
+def my_pde_rhs(t, y, *args):
+    """Right-hand side: dy/dt = f(t, y, ...)
 
-## Links
+    Implement your spatial discretisation here.
+    Handle boundary conditions within this function.
+    """
+    ...
 
-Check out the source code on [GitHub](https://github.com/christianfenton/pardax).
+# 2. Set initial condition
+y0 = ...
 
-## Future Works
+# 3. Choose time-stepping method
+method = pdx.RK4()
 
-In the future, `pardax.integrate.solve_ivp` should be adapted to match 
-[`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
-and added to [`jax.scipy.integrate`](https://docs.jax.dev/en/latest/jax.scipy.html#module-jax.scipy.integrate).
+# 4. Integrate
+t, y = pdx.solve_ivp(
+    my_pde_rhs,
+    t_eval=jnp.linspace(0.0, 1.0, 100),
+    y0=y0,
+    stepper=method,
+    dt_max=0.001,
+    args=(...,)
+)
+```
+
+## Documentation
+
+Build the documentation by running
+```bash
+uv run mkdocs build
+```
+or serve them as a local webpage with
+```bash
+uv run mkdocs serve
+```

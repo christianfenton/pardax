@@ -97,7 +97,7 @@ class TestExplicitMethods:
             t_eval,
             y0,
             method,
-            step_size=dt,
+            dt_max=dt,
             args=(D, bc_left, bc_right, dx)
         )
 
@@ -128,7 +128,7 @@ class TestExplicitMethods:
             t_eval,
             y0,
             method,
-            step_size=dt,
+            dt_max=dt,
             args=(D, bc_left, bc_right, dx)
         )
 
@@ -168,7 +168,7 @@ class TestImplicitMethods:
             t_eval,
             y0,
             method,
-            step_size=dt,
+            dt_max=dt,
             args=(D, bc_left, bc_right, dx)
         )
 

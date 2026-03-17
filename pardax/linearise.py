@@ -10,7 +10,9 @@ from typing import Callable
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+from jax import Array
 
+from .type_aliases import RHS
 from .linsolve import AbstractLinearSolver, DirectDense, GMRES
 
 
@@ -18,7 +20,9 @@ class AbstractLineariser(eqx.Module):
     """Base class for locally linearising a system of equations."""
 
     @abc.abstractmethod
-    def __call__(self, fun, t, h, args) -> Callable:
+    def __call__(
+        self, fun: RHS, t: Array, h: Array, args: tuple
+    ) -> Callable[[Array, Array], Array]:
         """Returns a solve function: (residual_at_y, y) --> delta_y"""
         raise NotImplementedError
 
@@ -28,12 +32,16 @@ class AutoJVP(AbstractLineariser):
 
     linsolver: AbstractLinearSolver
 
-    def __init__(self, linsolver: AbstractLinearSolver = GMRES()):
+    def __init__(self, linsolver: AbstractLinearSolver = GMRES()) -> None:
         self.linsolver = linsolver
 
-    def __call__(self, fun, t, h, args):
-        def solve(r, y):
-            def matvec(v):
+    def __call__(
+        self, fun: RHS, t: Array, h: Array, args: tuple
+    ) -> Callable[[Array, Array], Array]:
+
+        def solve(r: Array, y: Array) -> Array:
+
+            def matvec(v: Array) -> Array:
                 _, df_v = jax.jvp(lambda y_: fun(t, y_, *args), (y,), (v,))
                 return v - h * df_v
 
@@ -50,12 +58,15 @@ class JVP(AbstractLineariser):
 
     def __init__(
         self, jvp_fn: Callable, linsolver: AbstractLinearSolver = GMRES()
-    ):
+    ) -> None:
         self.jvp_fn = jvp_fn
         self.linsolver = linsolver
 
-    def __call__(self, fun, t, h, args):
-        def solve(r, y):
+    def __call__(
+        self, fun: RHS, t: Array, h: Array, args: tuple
+    ) -> Callable[[Array, Array], Array]:
+
+        def solve(r: Array, y: Array) -> Array:
             return self.linsolver(
                 lambda v: v - h * self.jvp_fn(t, y, v, *args), -r
             )
@@ -71,12 +82,15 @@ class Jacobian(AbstractLineariser):
 
     def __init__(
         self, jac_fn: Callable, linsolver: AbstractLinearSolver = DirectDense()
-    ):
+    ) -> None:
         self.jac_fn = jac_fn
         self.linsolver = linsolver
 
-    def __call__(self, fun, t, h, args):
-        def solve(r, y):
+    def __call__(
+        self, fun: RHS, t: Array, h: Array, args: tuple
+    ) -> Callable[[Array, Array], Array]:
+        
+        def solve(r: Array, y: Array) -> Array:
             J = jnp.eye(y.size) - h * self.jac_fn(t, y, *args)
             return self.linsolver(J, -r)
 

@@ -22,9 +22,15 @@ def simple_dynamical_system():
     Initial condition: y(t=0) = 1.0
     Expected solution: y(t=t') = sqrt(2), where t' >> 0.
     """
-    fun = lambda t, y: 2.0 * y * (jnp.sqrt(2.0) - y)
-    jvp_fn = lambda t, y, v: 2.0 * (jnp.sqrt(2.0) - 2.0 * y) * v
-    jac_fn = lambda t, y: jnp.diag(2.0 * (jnp.sqrt(2.0) - 2.0 * y))
+    def fun(t, y):
+        return 2.0 * y * (jnp.sqrt(2.0) - y)
+    
+    def jvp_fn(t, y, v): 
+        return 2.0 * (jnp.sqrt(2.0) - 2.0 * y) * v
+    
+    def jac_fn(t, y):
+        jnp.diag(2.0 * (jnp.sqrt(2.0) - 2.0 * y))
+
     y0 = jnp.ones((4,))
     soln = jnp.full_like(y0, jnp.sqrt(2.0))
     return fun, jvp_fn, jac_fn, y0, soln
@@ -42,7 +48,7 @@ class TestODEIntegrator:
             )
         )
         t_eval = jnp.array([0.0, 10.0])
-        _, y = solve_ivp(fun, t_eval, y0, method, step_size=0.1)
+        _, y = solve_ivp(fun, t_eval, y0, method, dt_max=0.1)
         assert jnp.allclose(y[-1], expected, atol=1e-6)
 
     def test_implicit_autodiff(self, simple_dynamical_system):
@@ -52,7 +58,7 @@ class TestODEIntegrator:
             root_finder=NewtonRaphson(tol=1e-10)
         )
         t_eval = jnp.array([0.0, 10.0])
-        _, y = solve_ivp(fun, t_eval, y0, method, step_size=0.1)
+        _, y = solve_ivp(fun, t_eval, y0, method, dt_max=0.1)
         assert jnp.allclose(y[-1], expected, atol=1e-6)
 
     def test_implicit_jac(self, simple_dynamical_system):
@@ -65,7 +71,7 @@ class TestODEIntegrator:
             )
         )
         t_eval = jnp.array([0.0, 10.0])
-        _, y = solve_ivp(fun, t_eval, y0, method, step_size=0.1)
+        _, y = solve_ivp(fun, t_eval, y0, method, dt_max=0.1)
         assert jnp.allclose(y[-1], expected, atol=1e-6)
 
     def test_ode_eval(self):
@@ -79,7 +85,7 @@ class TestODEIntegrator:
             t_eval,
             y0,
             BackwardEuler(root_finder=NewtonRaphson(tol=1e-10)),
-            step_size=h,
+            dt_max=h,
         )
 
         expected = jnp.exp(-t_eval)

@@ -1,9 +1,12 @@
 # Solver interface
 from .integrate import solve_ivp
 
+# Type aliases
+from .type_aliases import RHS, SplitRHS
+
 # Time-stepping schemes
 from .stepper import (
-    AbstractStepper, 
+    AbstractStepper,
     ForwardEuler,
     RK4,
     BackwardEuler,
@@ -32,6 +35,9 @@ from .linsolve import (
 
 __all__ = [
     "solve_ivp",
+
+    "RHS",
+    "SplitRHS",
 
     "AbstractStepper",
     "ForwardEuler",

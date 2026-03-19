@@ -1,11 +1,9 @@
 # Solver interface
 from .integrate import solve_ivp
 
-# Type aliases
-from .type_aliases import RHS, SplitRHS
-
 # Time-stepping schemes
-from .stepper import (
+from .timesteppers import (
+    StepperLike,
     AbstractStepper,
     ForwardEuler,
     RK4,
@@ -14,9 +12,10 @@ from .stepper import (
 )
 
 # Root-finding algorithms
-from .roots import AbstractRootFinder, NewtonRaphson
-
-from .linearise import (
+from .rootfinders import (
+    AbstractRootFinder,
+    NewtonRaphson,
+    LinearRootFinder,
     AbstractLineariser,
     Jacobian,
     JVP,
@@ -24,21 +23,26 @@ from .linearise import (
 )
 
 # Linear solvers
-from .linsolve import (
+from .linalg import (
+    # Linear solvers
     AbstractLinearSolver,
     DirectDense,
     GMRES,
     CG,
     BiCGStab,
-    Spectral
+    SpectralSolver,
+
+    # Linear operators
+    AbstractLinearOperator,
+    DenseOperator,
+    MatrixFreeOperator,
+    SpectralOperator,
 )
 
 __all__ = [
     "solve_ivp",
 
-    "RHS",
-    "SplitRHS",
-
+    "StepperLike",
     "AbstractStepper",
     "ForwardEuler",
     "RK4",
@@ -47,6 +51,7 @@ __all__ = [
 
     "AbstractRootFinder",
     "NewtonRaphson",
+    "LinearRootFinder",
 
     "AbstractLineariser",
     "AutoJVP",
@@ -58,5 +63,10 @@ __all__ = [
     "GMRES",
     "CG",
     "BiCGStab",
-    "Spectral"
+    "SpectralSolver",
+
+    "AbstractLinearOperator",
+    "DenseOperator",
+    "MatrixFreeOperator",
+    "SpectralOperator"
 ]

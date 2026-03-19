@@ -5,10 +5,9 @@ import pytest
 import jax.numpy as jnp
 
 from pardax.integrate import solve_ivp
-from pardax.stepper import BackwardEuler
-from pardax.roots import NewtonRaphson
-from pardax.linearise import JVP, Jacobian
-from pardax.linsolve import GMRES, DirectDense
+from pardax.timesteppers import BackwardEuler
+from pardax.rootfinders import NewtonRaphson, JVP, Jacobian
+from pardax.linalg import GMRES, DirectDense
 
 
 @pytest.fixture
@@ -24,12 +23,12 @@ def simple_dynamical_system():
     """
     def fun(t, y):
         return 2.0 * y * (jnp.sqrt(2.0) - y)
-    
-    def jvp_fn(t, y, v): 
+
+    def jvp_fn(t, y, v):
         return 2.0 * (jnp.sqrt(2.0) - 2.0 * y) * v
-    
+
     def jac_fn(t, y):
-        jnp.diag(2.0 * (jnp.sqrt(2.0) - 2.0 * y))
+        return jnp.diag(2.0 * (jnp.sqrt(2.0) - 2.0 * y))
 
     y0 = jnp.ones((4,))
     soln = jnp.full_like(y0, jnp.sqrt(2.0))
@@ -78,17 +77,17 @@ class TestODEIntegrator:
         """Test solver with intermediate evaluation points."""
         y0 = jnp.array([1.0])
         t_eval = jnp.array([0.0, 1.0, 2.0])
-        h = 1e-2
+        dt = 1e-2
 
         t, y = solve_ivp(
             lambda t, y: -y,
             t_eval,
             y0,
             BackwardEuler(root_finder=NewtonRaphson(tol=1e-10)),
-            dt_max=h,
+            dt_max=dt,
         )
 
         expected = jnp.exp(-t_eval)
 
         assert jnp.allclose(t, t_eval, atol=1e-10)
-        assert jnp.allclose(y[:, 0], expected, atol=h)
+        assert jnp.allclose(y[:, 0], expected, atol=dt)

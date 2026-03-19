@@ -1,9 +1,10 @@
 # Getting started
 
-The `pardax.integrate` module provides JAX-compatible time integration methods
-for solving initial value problems (IVPs). The solver performs temporal
-discretisation and integration, while users need to handle spatial
-discretisation during setup.
+`pardax` is a JAX-native ODE integrator for solving initial value
+problems. It is fully compatible with JAX transformations (`jit`,
+`vmap`, `grad`), composable, and designed for the semi-discrete
+approach to PDEs: you handle the spatial discretisation, and `pardax`
+handles the time integration.
 
 ## Quick start
 
@@ -12,7 +13,7 @@ import jax.numpy as jnp
 import pardax as pdx
 
 # 1. Define your discretised PDE as an ODE
-# NOTE: This must be written in a JAX-compatible (functionally pure) way
+# NOTE: must be functionally pure (JAX-compatible)
 def my_pde_rhs(t, y, *args):
     """Right-hand side: dy/dt = f(t, y, ...)
 
@@ -30,7 +31,7 @@ method = pdx.RK4()
 # 4. Integrate
 t, y = pdx.solve_ivp(
     my_pde_rhs,
-    t_eval=jnp.linspace(0.0, 1.0, 100),
+    t_eval=jnp.linspace(0.0, 1.0, 11),
     y0=y0,
     stepper=method,
     dt_max=0.001,
@@ -38,50 +39,110 @@ t, y = pdx.solve_ivp(
 )
 ```
 
+## JAX transformations
+
+Because `pardax` is built on JAX and (Equinox)[https://docs.kidger.site/equinox/], 
+you can apply JAX transformations directly to `solve_ivp`. 
+This is one of the main advantages over libraries like `scipy.integrate`.
+
+### JIT compilation
+
+Compile the entire integration for faster execution:
+
+```python
+import jax
+
+solve_jit = jax.jit(lambda y_: pdx.solve_ivp(
+    fun, t_eval, y_, stepper, dt_max, args
+))
+
+t, y = solve_jit(y0)
+```
+
+### Vectorisation
+
+Integrate multiple initial conditions in parallel with `vmap`:
+
+```python
+y0_batch = jnp.stack([y0_1, y0_2, y0_3])  # (batch, n)
+
+solve_batch = jax.vmap(
+    lambda y_: pdx.solve_ivp(fun, t_eval, y_, stepper, dt_max, args)
+)
+
+t, y_batch = solve_batch(y0_batch)  # y_batch: (batch, len(t_eval), n)
+```
+
+### Differentiation
+
+Differentiate through the solver for sensitivity analysis or parameter
+optimisation:
+
+```python
+def loss(params):
+    t, y = pdx.solve_ivp(fun, t_eval, y0, stepper, dt_max, args=(params,))
+    return jnp.mean((y[-1] - y_target)**2)
+
+grads = jax.grad(loss)(params)
+```
+
 ## Time-stepping methods
 
 ### Explicit methods
 
-Explicit methods compute the next state directly from the current state.
-They're simple and fast but can require very small time-steps
-for stiff problems.
+Explicit methods compute the next state directly from the current
+state. They are simple and efficient per step but require small time
+steps for stiff problems.
+
+```python
+method = pdx.ForwardEuler()   # first-order
+method = pdx.RK4()            # fourth-order
+```
 
 ### Implicit methods
 
-Implicit methods use a root-finding algorithm at each time step, and
-root-finding algorithms often use linear solvers at each iteration.
-Implicit methods are usually more expensive than explicit methods per step but
-can allow much larger time steps for stiff problems.
+Implicit methods solve a non-linear or linear system at each time step.
+They are more expensive per step but can take much larger time steps for
+stiff problems (e.g. diffusion-dominated PDEs).
 
-### JAX transformations
-
-As long as `fun` is JAX-compatible,
-[solve_ivp][pardax.solve_ivp] should support most JAX transformations.
-
-JIT Compilation:
+The implicit solver is assembled from composable components:
 
 ```python
-import jax
-import pardax as pdx
-
-# JIT-compile the entire integration
-solve_jit = jax.jit(
-    pdx.solve_ivp(fun, t_eval, y0, stepper, dt_max, args),
-    static_argnames=['fun']
+# Linear solver -> Lineariser -> Root finder -> Time stepper
+method = pdx.BackwardEuler(
+    root_finder=pdx.NewtonRaphson(
+        lineariser=pdx.AutoJVP(linsolver=pdx.GMRES()),
+        tol=1e-6,
+    )
 )
-
-t_final, y_final = solve_jit(y0)
 ```
 
-Vectorisation (batching):
+For linear problems, you can skip Newton iteration entirely and solve
+the implicit system in a single step using a
+[LinearRootFinder][pardax.LinearRootFinder]. See the
+[Burgers' equation tutorial](tutorials/spectral_burgers.md) for an
+example.
+
+### IMEX (implicit-explicit) splitting
+
+When a problem has both stiff and non-stiff terms, an IMEX scheme
+treats each with an appropriate method:
 
 ```python
-# Integrate multiple initial conditions in parallel
-y0_batch = jnp.stack([y0_1, y0_2, y0_3])  # (batch, n)
+rhs = {
+    "implicit": stiff_term,      # e.g. diffusion
+    "explicit": non_stiff_term,  # e.g. advection
+}
 
-solve_batch = jax.vmap(
-    lambda y_: pdx.solve_ivp(fun, t_eval, y_, stepper, dt_max, args)[1]
+method = pdx.IMEX(
+    implicit=pdx.BackwardEuler(root_finder=...),
+    explicit=pdx.RK4(),
 )
 
-y_final_batch = solve_batch(y0_batch)  # (batch, n)
+t, y = pdx.solve_ivp(rhs, t_eval, y0, method, dt_max=dt, args=args)
 ```
+
+This eliminates the stiff stability constraint while keeping the
+non-stiff part cheap. See the
+[Burgers' equation tutorial](tutorials/spectral_burgers.md) for a
+complete example.

@@ -6,10 +6,9 @@ import jax
 import jax.numpy as jnp
 
 from pardax.integrate import solve_ivp
-from pardax.stepper import ForwardEuler, BackwardEuler, RK4
-from pardax.roots import NewtonRaphson
-from pardax.linearise import AutoJVP
-from pardax.linsolve import GMRES
+from pardax.timesteppers import ForwardEuler, BackwardEuler, RK4
+from pardax.rootfinders import NewtonRaphson, AutoJVP
+from pardax.linalg import GMRES
 
 
 def laplacian_dirichlet_1d(
@@ -103,7 +102,7 @@ class TestExplicitMethods:
 
         y_exact = gaussian_ic(x, t_end, D, L)
 
-        assert jnp.allclose(y[-1], y_exact, atol=9*dt)
+        assert jnp.allclose(y[-1], y_exact, atol=dt)
 
     def test_rk4(self, heat_equation_setup):
         setup = heat_equation_setup
@@ -134,7 +133,7 @@ class TestExplicitMethods:
 
         y_exact = gaussian_ic(x, t_end, D, L)
 
-        assert jnp.allclose(y[-1], y_exact, atol=9*(dt**2))
+        assert jnp.allclose(y[-1], y_exact, atol=dt**2)
 
 
 class TestImplicitMethods:
@@ -157,10 +156,10 @@ class TestImplicitMethods:
         y0 = gaussian_ic(x, t_start, D, L)
 
         linsolver = GMRES(tol=1e-8, maxiter=100)
-        root_finder = NewtonRaphson(
+        solver = NewtonRaphson(
             lineariser=AutoJVP(linsolver=linsolver), tol=1e-8, maxiter=20
         )
-        method = BackwardEuler(root_finder=root_finder)
+        method = BackwardEuler(root_finder=solver)
 
         t_eval = jnp.array([t_start, t_end])
         _, y = solve_ivp(
@@ -174,4 +173,4 @@ class TestImplicitMethods:
 
         y_exact = gaussian_ic(x, t_end, D, L)
 
-        assert jnp.allclose(y[-1], y_exact, atol=9*dt)
+        assert jnp.allclose(y[-1], y_exact, atol=dt**2)

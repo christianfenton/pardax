@@ -1,8 +1,10 @@
 # pardax
 
-A flexible solver interface for partial differential equations, written in JAX.
+A JAX-native solver for initial value problems.
 
-[Get started] using the package(guide.md), or [check out a tutorial](tutorials/heat_equation.md).
+`pardax` provides a variety of composable time-stepping schemes that 
+work seamlessly with most JAX transformations, and a familiar interface 
+inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
 
 ## Installation
 
@@ -34,4 +36,13 @@ With HTTPS:
 pip install git+https://github.com/christianfenton/pardax.git
 ```
 
-Read the entire source code on [GitHub](https://github.com/christianfenton/pardax).
+## Next steps
+
+- [Getting started](guide.md)
+- [Heat equation with backward Euler](tutorials/implicit_heat.md)
+- [Burgers' equation with a pseudo-spectral method](tutorials/spectral_burgers.md)
+- [Extending the solver](extending.md)
+- [API reference](api.md)
+
+Read the source code on
+[GitHub](https://github.com/christianfenton/pardax).

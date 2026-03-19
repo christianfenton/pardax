@@ -1,7 +1,7 @@
 [project]
 name = "pardax"
-version = "0.1.1"
-description = "A flexible solver interface for PDEs, written in JAX"
+version = "0.1.2"
+description = "JAX-native solver for initial value problems"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

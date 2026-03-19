@@ -4,9 +4,8 @@ import pytest
 
 import jax.numpy as jnp
 
-from pardax.roots import NewtonRaphson
-from pardax.linearise import AutoJVP, JVP, Jacobian
-from pardax.linsolve import GMRES, DirectDense
+from pardax.rootfinders import NewtonRaphson, AutoJVP, JVP, Jacobian
+from pardax.linalg import GMRES, DirectDense
 
 
 @pytest.fixture
@@ -18,20 +17,20 @@ def backward_euler_system():
 
     Test that Newton-Raphson drives G(y) -> 0 with each linearisation strategy.
     """
-    def fun(t, y): 
+    def fun(t, y):
         return 2.0 * y * (jnp.sqrt(2.0) - y)
-    
-    def jvp_fn(t, y, v): 
+
+    def jvp_fn(t, y, v):
         return 2.0 * (jnp.sqrt(2.0) - 2.0 * y) * v
 
-    def jac_fn(t, y): 
+    def jac_fn(t, y):
         return jnp.diag(2.0 * (jnp.sqrt(2.0) - 2.0 * y))
-    
+
     y0 = jnp.ones((4,))
     h = 1.0
     t = 0.0
 
-    def residual(y): 
+    def residual(y):
         return y - y0 - h * fun(t + h, y)
 
     return fun, residual, jvp_fn, jac_fn, y0, t, h

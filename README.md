@@ -1,6 +1,10 @@
 # pardax
 
-A flexible solver interface for partial differential equations, written in JAX.
+A JAX-native solver for initial value problems.
+
+`pardax` provides a variety of composable time-stepping schemes that 
+work seamlessly with most JAX transformations, and a familiar interface 
+inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
 
 ## Installation
 
@@ -39,13 +43,9 @@ import jax.numpy as jnp
 import pardax as pdx
 
 # 1. Define your discretised PDE as an ODE
-# NOTE: This must be written in a JAX-compatible (functionally pure) way
+# NOTE: must be functionally pure (JAX-compatible)
 def my_pde_rhs(t, y, *args):
-    """Right-hand side: dy/dt = f(t, y, ...)
-
-    Implement your spatial discretisation here.
-    Handle boundary conditions within this function.
-    """
+    """dy/dt = f(t, y, ...)"""
     ...
 
 # 2. Set initial condition

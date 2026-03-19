@@ -1,20 +1,19 @@
 """Time integration using scan + fori_loop."""
 
-from typing import Tuple, Union
+from typing import Tuple, Any
 
 import jax
 from jax import Array
 import jax.numpy as jnp
 
-from .type_aliases import RHS, SplitRHS
-from .stepper import AbstractStepper
+from .timesteppers import StepperLike
 
 
 def solve_ivp(
-    fun: Union[RHS, SplitRHS],
+    fun: Any,
     t_eval: Array,
     y0: Array,
-    stepper: AbstractStepper,
+    stepper: StepperLike,
     dt_max: float,
     args: tuple = ()
 ) -> Tuple[Array, Array]:

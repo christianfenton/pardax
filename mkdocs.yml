@@ -42,8 +42,9 @@ watch:
 
 nav:
   - Home: index.md
+  - Getting Started: guide.md
   - Tutorials:
-    - Solving the heat equation: tutorials/heat_equation.md
-  - User Guide: guide.md
+    - Heat equation: tutorials/implicit_heat.md
+    - Burgers' equation: tutorials/spectral_burgers.md
   - Extending the Solver: extending.md
   - API Reference: api.md

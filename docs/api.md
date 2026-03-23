@@ -1,11 +1,12 @@
 # API reference
 
-## Solver
+## Solvers
 
-The main entry point. Integrates an ODE system over a sequence of
-evaluation times.
+Main entry points for integrating ODE systems.
 
 ::: pardax.solve_ivp
+
+::: pardax.integrate
 
 ## Time-stepping schemes
 

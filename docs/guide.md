@@ -3,7 +3,7 @@
 `pardax` is a JAX-native ODE integrator for solving initial value
 problems. It is fully compatible with JAX transformations (`jit`,
 `vmap`, `grad`), composable, and designed for the semi-discrete
-approach to PDEs: you handle the spatial discretisation, and `pardax`
+approach to PDEs: users handle the spatial discretisation, and `pardax`
 handles the time integration.
 
 ## Quick start
@@ -31,19 +31,49 @@ method = pdx.RK4()
 # 4. Integrate
 t, y = pdx.solve_ivp(
     my_pde_rhs,
-    t_eval=jnp.linspace(0.0, 1.0, 11),
+    t_span=(0.0, 1.0),
     y0=y0,
     stepper=method,
-    dt_max=0.001,
-    args=(...,)
+    step_size=0.001,
+    args=(...,),
+    num_checkpoints=10,
+)
+```
+
+## Choosing a solver
+
+`pardax` provides two top-level integration functions.
+
+[solve_ivp][pardax.solve_ivp] divides `t_span` into equally-spaced
+segments and saves a snapshot at the end of each one. It uses
+`jax.lax.scan` internally, which makes it compatible with all JAX
+transformations including reverse-mode automatic differentiation.
+
+[integrate][pardax.integrate] advances the solution to an arbitrary
+sequence of times in `t_eval`, using a step-size callback that can
+depend on the current solution state. It uses `jax.lax.while_loop`
+internally, so it supports `jax.jit` and `jax.vmap` but only forward-mode
+automatic differentation. Use this when you need CFL-based or otherwise 
+state-dependent step sizes, or when output times are not equally spaced.
+
+```python
+def cfl_step_size(t, u, nu, dx):
+    return 0.5 * dx**2 / nu
+
+t, y = pdx.integrate(
+    fun,
+    t_eval=jnp.linspace(0.0, 5.0, 11),
+    y0=y0,
+    stepper=pdx.RK4(),
+    step_size_fn=cfl_step_size,
+    args=(nu, dx),
 )
 ```
 
 ## JAX transformations
 
-Because `pardax` is built on JAX and (Equinox)[https://docs.kidger.site/equinox/], 
-you can apply JAX transformations directly to `solve_ivp`. 
-This is one of the main advantages over libraries like `scipy.integrate`.
+Because `pardax` is built on JAX and [Equinox](https://docs.kidger.site/equinox/),
+you can apply JAX transformations directly to `solve_ivp`.
 
 ### JIT compilation
 
@@ -53,7 +83,7 @@ Compile the entire integration for faster execution:
 import jax
 
 solve_jit = jax.jit(lambda y_: pdx.solve_ivp(
-    fun, t_eval, y_, stepper, dt_max, args
+    fun, t_span, y_, stepper, step_size, args
 ))
 
 t, y = solve_jit(y0)
@@ -67,10 +97,10 @@ Integrate multiple initial conditions in parallel with `vmap`:
 y0_batch = jnp.stack([y0_1, y0_2, y0_3])  # (batch, n)
 
 solve_batch = jax.vmap(
-    lambda y_: pdx.solve_ivp(fun, t_eval, y_, stepper, dt_max, args)
+    lambda y_: pdx.solve_ivp(fun, t_span, y_, stepper, step_size, args)
 )
 
-t, y_batch = solve_batch(y0_batch)  # y_batch: (batch, len(t_eval), n)
+t, y_batch = solve_batch(y0_batch)
 ```
 
 ### Differentiation
@@ -80,7 +110,7 @@ optimisation:
 
 ```python
 def loss(params):
-    t, y = pdx.solve_ivp(fun, t_eval, y0, stepper, dt_max, args=(params,))
+    t, y = pdx.solve_ivp(fun, t_span, y0, stepper, step_size, args=(params,))
     return jnp.mean((y[-1] - y_target)**2)
 
 grads = jax.grad(loss)(params)
@@ -139,7 +169,7 @@ method = pdx.IMEX(
     explicit=pdx.RK4(),
 )
 
-t, y = pdx.solve_ivp(rhs, t_eval, y0, method, dt_max=dt, args=args)
+t, y = pdx.solve_ivp(rhs, t_span, y0, method, step_size=dt, args=args)
 ```
 
 This eliminates the stiff stability constraint while keeping the

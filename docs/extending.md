@@ -27,7 +27,7 @@ class Heun(pdx.AbstractStepper):
         k2 = fun(t + h, y + h * k1, *args)
         return y + 0.5 * h * (k1 + k2)
 
-t, y = pdx.solve_ivp(fun, t_eval, y0, Heun(), dt_max=0.01, args=args)
+t, y = pdx.solve_ivp(fun, t_span, y0, Heun(), step_size=0.01, args=args)
 ```
 
 ### Duck typing with `StepperLike`
@@ -56,7 +56,7 @@ class MyProjectionStepper(eqx.Module):
         tendency, project = fun(t, y, *args)
         return project(y + h * tendency)
 
-t, y = pdx.solve_ivp(fun, t_eval, y0, MyProjectionStepper(), dt_max=0.01)
+t, y = pdx.solve_ivp(fun, t_span, y0, MyProjectionStepper(), step_size=0.01)
 ```
 
 The built-in [IMEX][pardax.IMEX] stepper is an example of this

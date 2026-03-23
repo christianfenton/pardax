@@ -60,7 +60,7 @@ etc.) are passed through the `args` tuple when calling `solve_ivp`.
 ```python
 # Physical parameters
 D = 2.0       # diffusivity
-L = 100.0     # domain length
+L = 50.0     # domain length
 n = 128       # number of interior grid points
 dx = L / (n + 1)
 
@@ -70,14 +70,12 @@ bc_left, bc_right = 0.0, 0.0
 # Spatial grid (interior points only)
 x = jnp.linspace(dx, L - dx, n, endpoint=True)
 
-# Analytical solution (used for IC and verification)
 def gaussian(x, t, D, L):
     return jnp.exp(-((x - L/2)**2) / (4*D*t)) / jnp.sqrt(4*jnp.pi*D*t)
 
-# Evaluation times (must include the initial time as first element)
-t_eval = jnp.array([1.0, 3.0, 6.0, 10.0])
+t_span = (1.0, 10.0)
 
-y0 = gaussian(x, t_eval[0], D, L)
+y0 = gaussian(x, t_span[0], D, L)
 ```
 
 ## 3. Build the solver and integrate
@@ -114,15 +112,16 @@ we can use a time step much larger than the explicit diffusive CFL
 limit $\Delta t \lesssim \Delta x^2 / (2D)$:
 
 ```python
-dt = 1e-1  # explicit CFL would require dt < ~0.15
+dt = 1e-1
 
 t, y = pdx.solve_ivp(
     heat_rhs,
-    t_eval,
-    y0,
-    method,
-    dt_max=dt,
+    t_span=t_span,
+    y0=y0,
+    stepper=method,
+    step_size=dt,
     args=(D, bc_left, bc_right, dx),
+    num_checkpoints=2,
 )
 ```
 
@@ -131,19 +130,27 @@ t, y = pdx.solve_ivp(
 ```python
 import matplotlib.pyplot as plt
 
-fig, ax = plt.subplots(figsize=(8, 4.5))
+plt.style.use('seaborn-v0_8-colorblind')
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-for i in range(len(t_eval)):
-    style = ':' if i == 0 else '-'
-    ax.plot(x, y[i], style, label=f"$t = {t_eval[i]:.0f}$")
+fig, ax = plt.subplots(figsize=(8, 4.5), layout='tight')
+for i in range(len(t)):
+    c = colors[i]
+    ax.plot(x, y[i], marker='o', color=c, markersize=4)
+    ax.plot(x, gaussian(x, t[i], D, L), ls='-', color=c, alpha=0.7)
 
-# Overlay exact solution at final time
-u_exact = gaussian(x, t_eval[-1], D, L)
-ax.plot(x, u_exact, 'k--', label=f"Exact, $t = {t_eval[-1]:.0f}$")
+# One legend entry per time snapshot, plus a style key
+for i in range(len(t)):
+    ax.plot([], [], 'o', color=colors[i], label=f"$t = {t[i]:.1f}$")
+
+# Dummy entries for the style convention
+ax.plot([], [], 'ko', label='Numerical')
+ax.plot([], [], 'k-', label='Exact')
 
 ax.legend()
 ax.set_xlabel("$x$")
 ax.set_ylabel("$u(t, x)$")
+plt.tight_layout()
 plt.show()
 ```
 

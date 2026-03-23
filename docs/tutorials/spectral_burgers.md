@@ -70,7 +70,7 @@ A = 1.0         # initial amplitude
 x = jnp.arange(0, L, dx)
 y0 = A * jnp.sin(2 * jnp.pi * x / L)
 
-t_eval = jnp.linspace(0.0, 5.0, 11)
+t_span = (0.0, 5.0)
 ```
 
 ## 3. Choosing a spectral transform
@@ -153,15 +153,23 @@ rhs = {
 ```python
 dt = 0.8 * dx / A  # advective CFL
 
-t, y = pdx.solve_ivp(rhs, t_eval, y0, stepper, dt_max=dt, args=(nu, dx))
+t, y = pdx.solve_ivp(
+    rhs,
+    t_span=t_span,
+    y0=y0,
+    stepper=stepper,
+    step_size=dt,
+    args=(nu, dx),
+    num_checkpoints=9,
+)
 ```
 
 ```python
 import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
-for i in range(0, len(t_eval), 2):
-    ax.plot(x, y[i], label=f"$t = {t_eval[i]:.1f}$")
+for i in range(0, len(t), 2):
+    ax.plot(x, y[i], label=f"$t = {t[i]:.1f}$")
 ax.set_xlabel("$x$")
 ax.set_ylabel("$u(t, x)$")
 ax.legend()

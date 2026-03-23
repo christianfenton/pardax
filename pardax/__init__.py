@@ -1,5 +1,5 @@
 # Solver interface
-from .integrate import solve_ivp
+from .ivp import solve_ivp, integrate
 
 # Time-stepping schemes
 from .timesteppers import (
@@ -41,6 +41,7 @@ from .linalg import (
 
 __all__ = [
     "solve_ivp",
+    "integrate",
 
     "StepperLike",
     "AbstractStepper",

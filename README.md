@@ -14,7 +14,7 @@ inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/refer
 
 With SSH:
 ```bash
-uv new my-project
+uv init my-project
 cd my-project
 uv add git+ssh://git@github.com/christianfenton/pardax.git
 ```

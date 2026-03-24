@@ -105,7 +105,7 @@ def integrate(
     Uses `jax.lax.while_loop` internally. Compatible with `jax.jit`,
     `jax.vmap`, and forward-mode differentiation (`jax.jvp`), but
     **not** reverse-mode differentiation (`jax.grad`). Use
-    [solve_ivp][pardax.solve_ivp] when reverse-mode AD is required.
+    [solve_ivp][pardax.solve_ivp] when reverse-mode autodiff is required.
 
     Args:
         fun: Right-hand side dy/dt = fun(t, y, *args). For IMEX steppers,

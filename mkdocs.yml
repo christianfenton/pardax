@@ -44,7 +44,7 @@ nav:
   - Home: index.md
   - Getting Started: guide.md
   - Tutorials:
-    - Heat equation: tutorials/implicit_heat.md
-    - Burgers' equation: tutorials/spectral_burgers.md
+    - Implicit time-stepping: tutorials/implicit_heat.md
+    - Pseudo-spectral methods: tutorials/spectral_burgers.md
   - Extending the Solver: extending.md
   - API Reference: api.md

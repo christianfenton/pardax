@@ -8,7 +8,7 @@ from .timesteppers import (
     ForwardEuler,
     RK4,
     BackwardEuler,
-    IMEX
+    IMEX,
 )
 
 # Root-finding algorithms
@@ -19,7 +19,7 @@ from .rootfinders import (
     AbstractLineariser,
     Jacobian,
     JVP,
-    AutoJVP
+    AutoJVP,
 )
 
 # Linear solvers
@@ -31,7 +31,6 @@ from .linalg import (
     CG,
     BiCGStab,
     SpectralSolver,
-
     # Linear operators
     AbstractLinearOperator,
     DenseOperator,
@@ -42,32 +41,27 @@ from .linalg import (
 __all__ = [
     "solve_ivp",
     "integrate",
-
     "StepperLike",
     "AbstractStepper",
     "ForwardEuler",
     "RK4",
     "BackwardEuler",
     "IMEX",
-
     "AbstractRootFinder",
     "NewtonRaphson",
     "LinearRootFinder",
-
     "AbstractLineariser",
     "AutoJVP",
     "JVP",
     "Jacobian",
-
     "AbstractLinearSolver",
     "DirectDense",
     "GMRES",
     "CG",
     "BiCGStab",
     "SpectralSolver",
-
     "AbstractLinearOperator",
     "DenseOperator",
     "MatrixFreeOperator",
-    "SpectralOperator"
+    "SpectralOperator",
 ]

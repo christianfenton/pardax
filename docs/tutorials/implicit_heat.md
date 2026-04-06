@@ -1,4 +1,4 @@
-# Solving the heat equation in one dimension
+# Implicit solver for the heat equation
 
 This tutorial demonstrates how to numerically solve an equation of the
 form $\partial u / \partial t = f(t, u)$ using `pardax`. It covers

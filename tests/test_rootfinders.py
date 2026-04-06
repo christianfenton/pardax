@@ -27,8 +27,8 @@ def backward_euler_system():
         return jnp.diag(2.0 * (jnp.sqrt(2.0) - 2.0 * y))
 
     y0 = jnp.ones((4,))
-    h = 1.0
-    t = 0.0
+    h = jnp.array(1.0)
+    t = jnp.array(0.0)
 
     def residual(y):
         return y - y0 - h * fun(t + h, y)

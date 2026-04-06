@@ -1,22 +1,23 @@
 import math
-from typing import Tuple, Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import jax
-from jax import Array
 import jax.numpy as jnp
+from jaxtyping import Array, Float
 
 from .timesteppers import StepperLike
 
 
 def solve_ivp(
     fun: Any,
-    t_span: Tuple[float, float],
-    y0: Array,
+    t_span: tuple[float, float],
+    y0: Float[Array, "*state"],
     stepper: StepperLike,
     step_size: float,
     args: tuple = (),
     num_checkpoints: int = 0,
-) -> Tuple[Array, Array]:
+) -> tuple[Float[Array, " steps"], Float[Array, "steps *state"]]:
     """
     Integrate dy/dt = fun(t, y, *args) from t_span[0] to t_span[1].
 
@@ -28,21 +29,20 @@ def solve_ivp(
     each segment, plus the initial state.
 
     Args:
-        fun: Right-hand side dy/dt = fun(t, y, *args). For IMEX steppers,
-            pass a dict with keys ``"explicit"`` and ``"implicit"``.
-        t_span: Tuple (t_start, t_end).
-        y0: Initial condition at t_span[0].
-        stepper: Time-stepper instance (e.g., RK4(), BackwardEuler()).
-        step_size: Maximum time step size. The actual step used may be
-            smaller to fit an integer number of steps into each segment.
-        args: Additional arguments passed to fun.
+        fun: Right-hand side dy/dt = fun(t, y, *args)
+        t_span: Tuple of start and end time, e.g. (t_start, t_end)
+        y0: Initial condition at t_span[0]
+        stepper: Time-stepper instance (e.g., RK4(), BackwardEuler())
+        step_size: Maximum time step size
+            The actual step may be smaller to fit an integer number of steps
+        args: Additional arguments passed to fun
         num_checkpoints: Number of equally spaced intermediate snapshots
-            to store between t_start and t_end. If 0 (default), only the
-            initial and final states are returned.
+            to store between t_start and t_end. If 0 (default),
+            only the initial and final states are returned.
 
     Returns:
-        t: Time points, shape ``(num_checkpoints + 2,)``.
-        y: Solution snapshots, shape ``(num_checkpoints + 2, *y0.shape)``.
+        t: Time points, shape ``(num_checkpoints + 2,)``
+        y: Solution snapshots, shape ``(num_checkpoints + 2, *y0.shape)``
     """
     t_start, t_end = t_span
 
@@ -61,7 +61,8 @@ def solve_ivp(
             step < num_steps_total,
             lambda t, y: (t + h, stepper.step(fun, t, y, h, args)),
             lambda t, y: (t, y),
-            t, y,
+            t,
+            y,
         )
 
         return (t_new, y_new, step + 1), None
@@ -88,12 +89,12 @@ def solve_ivp(
 
 def integrate(
     fun: Any,
-    t_eval: Array,
-    y0: Array,
+    t_eval: Float[Array, " steps"],
+    y0: Float[Array, "*state"],
     stepper: StepperLike,
     step_size_fn: Callable[..., float],
     args: tuple = (),
-) -> Tuple[Array, Array]:
+) -> tuple[Float[Array, " steps"], Float[Array, "steps *state"]]:
     """
     Integrate dy/dt = fun(t, y, *args), returning states at times t_eval.
 
@@ -108,19 +109,17 @@ def integrate(
     [solve_ivp][pardax.solve_ivp] when reverse-mode autodiff is required.
 
     Args:
-        fun: Right-hand side dy/dt = fun(t, y, *args). For IMEX steppers,
-            pass a dict with keys ``"explicit"`` and ``"implicit"``.
-        t_eval: Sorted array of output times. The first element is the
-            initial time; the solution at ``t_eval[0]`` is ``y0``.
-        y0: Initial condition at t_eval[0].
-        stepper: Time-stepper instance (e.g., RK4(), BackwardEuler()).
+        fun: Right-hand side dy/dt = fun(t, y, *args)
+        t_eval: Sorted array of output times
+        y0: Initial condition at t_eval[0]
+        stepper: Time-stepper instance (e.g., RK4(), BackwardEuler())
         step_size_fn: Callable ``(t, y, *args) -> h`` returning the
-            desired step size at the current state.
-        args: Additional arguments passed to fun and step_size_fn.
+            desired step size from the current state
+        args: Additional arguments passed to fun and step_size_fn
 
     Returns:
-        t: Time points, shape ``(len(t_eval),)``.
-        y: Solution snapshots, shape ``(len(t_eval), *y0.shape)``.
+        t: Time points, shape ``(len(t_eval),)``
+        y: Solution snapshots, shape ``(len(t_eval), *y0.shape)``
     """
     eps = jnp.finfo(t_eval.dtype).eps
 

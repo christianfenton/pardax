@@ -10,5 +10,5 @@ __all__ = [
     "RK4",
     "ForwardEuler",
     "BackwardEuler",
-    "IMEX"
+    "IMEX",
 ]

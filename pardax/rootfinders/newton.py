@@ -1,12 +1,13 @@
 """Newton-Raphson root finder and linearisation strategies."""
 
 import abc
-from typing import Callable
+from collections.abc import Callable
+from typing import Any
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax import Array
+from jaxtyping import Array, Float
 
 from ..linalg import AbstractLinearSolver, DirectDense, GMRES
 from .base import AbstractRootFinder
@@ -17,12 +18,15 @@ class AbstractLineariser(eqx.Module):
 
     @abc.abstractmethod
     def __call__(
-        self, 
-        fun: Callable[..., Array], 
-        t: Array, 
-        h: Array, 
-        args: tuple
-    ) -> Callable[[Array, Array], Array]:
+        self,
+        fun: Callable[..., Float[Array, "*state"]],
+        t: Float[Array, ""],
+        h: Float[Array, ""],
+        args: tuple,
+    ) -> Callable[
+        [Float[Array, "*state"], Float[Array, "*state"]],
+        Float[Array, "*state"],
+    ]:
         """Returns a solve function: (residual_at_y, y) --> delta_y"""
         raise NotImplementedError
 
@@ -36,12 +40,21 @@ class AutoJVP(AbstractLineariser):
         self.linsolver = linsolver
 
     def __call__(
-        self, fun: Callable[..., Array], t: Array, h: Array, args: tuple
-    ) -> Callable[[Array, Array], Array]:
+        self,
+        fun: Callable[..., Float[Array, "*state"]],
+        t: Float[Array, ""],
+        h: Float[Array, ""],
+        args: tuple,
+    ) -> Callable[
+        [Float[Array, "*state"], Float[Array, "*state"]],
+        Float[Array, "*state"],
+    ]:
 
-        def solve(r: Array, y: Array) -> Array:
+        def solve(
+            r: Float[Array, "*state"], y: Float[Array, "*state"]
+        ) -> Float[Array, "*state"]:
 
-            def matvec(v: Array) -> Array:
+            def matvec(v: Float[Array, "*state"]) -> Float[Array, "*state"]:
                 _, df_v = jax.jvp(lambda y_: fun(t, y_, *args), (y,), (v,))
                 return v - h * df_v
 
@@ -63,10 +76,19 @@ class JVP(AbstractLineariser):
         self.linsolver = linsolver
 
     def __call__(
-        self, fun: Callable[..., Array], t: Array, h: Array, args: tuple
-    ) -> Callable[[Array, Array], Array]:
+        self,
+        fun: Any,
+        t: Float[Array, ""],
+        h: Float[Array, ""],
+        args: tuple,
+    ) -> Callable[
+        [Float[Array, "*state"], Float[Array, "*state"]],
+        Float[Array, "*state"],
+    ]:
 
-        def solve(r: Array, y: Array) -> Array:
+        def solve(
+            r: Float[Array, "*state"], y: Float[Array, "*state"]
+        ) -> Float[Array, "*state"]:
             return self.linsolver(
                 lambda v: v - h * self.jvp_fn(t, y, v, *args), -r
             )
@@ -87,14 +109,19 @@ class Jacobian(AbstractLineariser):
         self.linsolver = linsolver
 
     def __call__(
-        self, 
-        fun: Callable[..., Array], 
-        t: Array, 
-        h: Array, 
-        args: tuple
-    ) -> Callable[[Array, Array], Array]:
+        self,
+        fun: Any,
+        t: Float[Array, ""],
+        h: Float[Array, ""],
+        args: tuple,
+    ) -> Callable[
+        [Float[Array, "*state"], Float[Array, "*state"]],
+        Float[Array, "*state"],
+    ]:
 
-        def solve(r: Array, y: Array) -> Array:
+        def solve(
+            r: Float[Array, "*state"], y: Float[Array, "*state"]
+        ) -> Float[Array, "*state"]:
             J = jnp.eye(y.size) - h * self.jac_fn(t, y, *args)
             return self.linsolver(J, -r)
 
@@ -129,14 +156,16 @@ class NewtonRaphson(AbstractRootFinder):
 
     def __call__(
         self,
-        residual_fn: Callable[[Array], Array],
-        y_guess: Array,
-        fun: Callable[..., Array],
-        t: Array,
-        h: Array,
+        residual_fn: Callable[
+            [Float[Array, "*state"]], Float[Array, "*state"]
+        ],
+        y_guess: Float[Array, "*state"],
+        fun: Callable[..., Float[Array, "*state"]],
+        t: Float[Array, ""],
+        h: Float[Array, ""],
         args: tuple,
         theta: float = 1.0,
-    ) -> Array:
+    ) -> Float[Array, "*state"]:
         """
         Find the root of residual_fn(y) = 0 using Newton-Raphson method.
 

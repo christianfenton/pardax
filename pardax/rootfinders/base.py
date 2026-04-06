@@ -1,10 +1,10 @@
 """Abstract base class for root-finding algorithms."""
 
 import abc
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
-from jax import Array
+from jaxtyping import Array, Float
 
 
 class AbstractRootFinder(eqx.Module):
@@ -13,14 +13,16 @@ class AbstractRootFinder(eqx.Module):
     @abc.abstractmethod
     def __call__(
         self,
-        residual_fn: Callable[[Array], Array],
-        y_guess: Array,
-        fun: Callable[..., Array],
-        t: Array,
-        h: Array,
+        residual_fn: Callable[
+            [Float[Array, "*state"]], Float[Array, "*state"]
+        ],
+        y_guess: Float[Array, "*state"],
+        fun: Callable[..., Float[Array, "*state"]],
+        t: Float[Array, ""],
+        h: Float[Array, ""],
         args: tuple,
         theta: float = 1.0,
-    ) -> Array:
+    ) -> Float[Array, "*state"]:
         """
         Find the root of residual_fn(y) = 0.
 

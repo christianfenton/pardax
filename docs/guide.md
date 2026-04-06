@@ -1,12 +1,13 @@
 # Getting started
 
 `pardax` is a JAX-native ODE integrator for solving initial value
-problems. It is fully compatible with JAX transformations (`jit`,
-`vmap`, `grad`), composable, and designed for the semi-discrete
-approach to PDEs: users handle the spatial discretisation, and `pardax`
-handles the time integration.
+problems, fully compatible with transformations like `jax.jit`,
+`jax.vmap` and `jax.grad`.
 
 ## Quick start
+
+In `pardax`, users are expected to handle the spatial discretisation of
+their ODE, and `pardax` handles the rest.
 
 ```python
 import jax.numpy as jnp

@@ -2,8 +2,10 @@
 
 A JAX-native solver for initial value problems.
 
+![Coverage](coverage.svg)
+
 `pardax` provides a variety of composable time-stepping schemes that 
-work seamlessly with most JAX transformations, and a familiar interface 
+work seamlessly with JAX transformations, along with a familiar interface 
 inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
 
 ## Installation
@@ -67,11 +69,28 @@ t, y = pdx.solve_ivp(
 
 ## Documentation
 
-Build the documentation by running
+Build the documentation cloning the repository and running
 ```bash
+uv sync --group docs
 uv run mkdocs build
 ```
 or serve them as a local webpage with
 ```bash
 uv run mkdocs serve
+```
+
+## Development
+
+Dependencies are split into the following groups:
+
+| Group | Purpose | Install |
+|-------|---------|---------|
+| `test` | pytest, beartype | `uv sync --group test` |
+| `docs` | mkdocs and plugins | `uv sync --group docs` |
+| `notebooks` | matplotlib, ipykernel | `uv sync --extra notebooks` |
+| `lint` | ruff, mypy | `uv sync --group lint` |
+
+To install everything at once:
+```bash
+uv sync --all-groups --all-extras
 ```

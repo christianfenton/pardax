@@ -12,12 +12,10 @@ from .linear import LinearRootFinder
 
 __all__ = [
     "AbstractRootFinder",
-    
     "NewtonRaphson",
     "AbstractLineariser",
     "AutoJVP",
     "JVP",
     "Jacobian",
-
     "LinearRootFinder",
 ]

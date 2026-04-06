@@ -1,9 +1,10 @@
 """Linear root finder and operator types for linear implicit systems."""
 
-from typing import Callable
+from collections.abc import Callable
+from typing import Any
 
 import jax.numpy as jnp
-from jax import Array
+from jaxtyping import Array, Float
 
 from ..linalg import AbstractLinearOperator, AbstractLinearSolver
 
@@ -18,6 +19,7 @@ class LinearRootFinder(AbstractRootFinder):
         linsolver: Linear solver to use
         operator: Constructs the linear system of equations
     """
+
     linsolver: AbstractLinearSolver
     operator: AbstractLinearOperator
 
@@ -31,21 +33,23 @@ class LinearRootFinder(AbstractRootFinder):
 
     def __call__(
         self,
-        residual_fn: Callable[[Array], Array],
-        y_guess: Array,
-        fun: Callable[..., Array],
-        t: Array,
-        h: Array,
+        residual_fn: Callable[
+            [Float[Array, "*state"]], Float[Array, "*state"]
+        ],
+        y_guess: Float[Array, "*state"],
+        fun: Any,
+        t: Float[Array, ""],
+        h: Float[Array, ""],
         args: tuple,
         theta: float = 1.0,
-    ) -> Array:
+    ) -> Float[Array, "*state"]:
         """
         Solve for R(y) = 0 in a single step.
 
         Args:
             residual_fn: Residual function R(y) = y - y_n - theta * h * L(y)
             y_guess: Initial guess (used for shape / initial value)
-            fun: Right-hand side function (unused)
+            fun: Right-hand side of system (unused)
             t: Current time
             h: Time step size
             args: Additional arguments

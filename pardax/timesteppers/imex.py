@@ -1,7 +1,7 @@
-from typing import Dict, Callable
+from collections.abc import Callable
 
 import equinox as eqx
-from jax import Array
+from jaxtyping import Array, Float
 
 from .base import AbstractStepper
 
@@ -45,23 +45,23 @@ class IMEX(eqx.Module):
 
     def step(
         self,
-        fun: Dict[str, Callable[..., Array]],
-        t: Array,
-        y: Array,
-        h: Array,
+        fun: dict[str, Callable[..., Float[Array, "*state"]]],
+        t: Float[Array, ""],
+        y: Float[Array, "*state"],
+        h: Float[Array, ""],
         args: tuple = (),
-    ) -> Array:
+    ) -> Float[Array, "*state"]:
         """Advance the solution by one time step.
 
         Args:
-            fun: A dict with keys 'implicit' and 'explicit'.
-            t: Current time.
-            y: Current solution.
-            h: Time step size.
-            args: Additional arguments to pass to fun.
+            fun: A dict with keys 'implicit' and 'explicit'
+            t: Current time
+            y: Current solution
+            h: Time step size
+            args: Additional arguments to pass to fun
 
         Returns:
-            Solution at t + h.
+            Solution at t + h
         """
         y_star = self.explicit.step(fun["explicit"], t, y, h, args)
         return self.implicit.step(fun["implicit"], t, y_star, h, args)

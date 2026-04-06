@@ -1,15 +1,16 @@
 """
-Linear solvers and operators used in 
+Linear solvers and operators used in
 root-finding and implicit time stepping schemes.
 """
 
 import abc
-from typing import Callable, Union, Optional
+from collections.abc import Callable
+from typing import Union, Optional
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.scipy.sparse.linalg as jax_sparse
-from jax import Array
+from jaxtyping import Array, Float
 
 
 class AbstractLinearOperator(eqx.Module):
@@ -22,22 +23,27 @@ class AbstractLinearOperator(eqx.Module):
 
     @abc.abstractmethod
     def system(
-        self, t: Array, h: Array, args: tuple
-    ) -> Union[Array, Callable[[Array], Array]]:
+        self, t: Float[Array, ""], h: Float[Array, ""], args: tuple
+    ) -> Union[
+        Float[Array, "..."], Callable[[Float[Array, " n"]], Float[Array, " n"]]
+    ]:
         """Build and return (I - h * L) for the current time step."""
         raise NotImplementedError
-    
+
 
 class AbstractLinearSolver(eqx.Module):
     """Base class for linear solvers."""
 
     @abc.abstractmethod
     def __call__(
-        self, 
-        A: Union[Array, Callable[[Array], Array]],
-        b: Array,
-        x0: Optional[Array] = None
-    ) -> Array:
+        self,
+        A: Union[
+            Float[Array, "..."],
+            Callable[[Float[Array, " n"]], Float[Array, " n"]],
+        ],
+        b: Float[Array, " n"],
+        x0: Optional[Float[Array, " n"]] = None,
+    ) -> Float[Array, " n"]:
         """
         Solve the linear system A*x = b.
 
@@ -66,7 +72,7 @@ class DenseOperator(AbstractLinearOperator):
     def __init__(self, op_fn: Callable) -> None:
         self.op_fn = op_fn
 
-    def system(self, t: Array, h: Array, args: tuple) -> Array:
+    def system(self, t: Float[Array, ""], h: Float[Array, ""], args: tuple) -> Float[Array, "n n"]:
         L = self.op_fn(t, *args)
         return jnp.eye(L.shape[0]) - h * L
 
@@ -85,10 +91,12 @@ class MatrixFreeOperator(AbstractLinearOperator):
     def __init__(self, op_fn: Callable) -> None:
         self.op_fn = op_fn
 
-    def system(self, t: Array, h: Array, args: tuple) -> Callable[[Array], Array]:
+    def system(
+        self, t: Float[Array, ""], h: Float[Array, ""], args: tuple
+    ) -> Callable[[Float[Array, " n"]], Float[Array, " n"]]:
         Lv = self.op_fn(t, *args)
         return lambda v: v - h * Lv(v)
-    
+
 
 class DirectDense(AbstractLinearSolver):
     """
@@ -99,11 +107,14 @@ class DirectDense(AbstractLinearSolver):
     """
 
     def __call__(
-        self, 
-        A: Union[Array, Callable[[Array], Array]],
-        b: Array,
-        x0: Optional[Array] = None
-    ) -> Array:
+        self,
+        A: Union[
+            Float[Array, "n n"],
+            Callable[[Float[Array, " n"]], Float[Array, " n"]],
+        ],
+        b: Float[Array, " n"],
+        x0: Optional[Float[Array, " n"]] = None,
+    ) -> Float[Array, " n"]:
         """
         Solve A*x = b.
 
@@ -134,6 +145,7 @@ class GMRES(AbstractLinearSolver):
     Dispatches to `jax.scipy.sparse.linalg.gmres`.
     Suitable for general non-symmetric systems.
     """
+
     tol: float = eqx.field(static=True)
     maxiter: int = eqx.field(static=True)
 
@@ -142,11 +154,14 @@ class GMRES(AbstractLinearSolver):
         self.maxiter = maxiter
 
     def __call__(
-        self, 
-        A: Union[Array, Callable[[Array], Array]],
-        b: Array,
-        x0: Optional[Array] = None
-    ) -> Array:
+        self,
+        A: Union[
+            Float[Array, "n n"],
+            Callable[[Float[Array, " n"]], Float[Array, " n"]],
+        ],
+        b: Float[Array, " n"],
+        x0: Optional[Float[Array, " n"]] = None,
+    ) -> Float[Array, " n"]:
         """
         Solve A*x = b using GMRES.
 
@@ -174,6 +189,7 @@ class CG(AbstractLinearSolver):
         tol: Convergence tolerance for residual norm
         maxiter: Maximum number of iterations
     """
+
     tol: float = eqx.field(static=True)
     maxiter: int = eqx.field(static=True)
 
@@ -182,11 +198,14 @@ class CG(AbstractLinearSolver):
         self.maxiter = maxiter
 
     def __call__(
-        self, 
-        A: Union[Array, Callable[[Array], Array]],
-        b: Array,
-        x0: Optional[Array] = None
-    ) -> Array:
+        self,
+        A: Union[
+            Float[Array, "n n"],
+            Callable[[Float[Array, " n"]], Float[Array, " n"]],
+        ],
+        b: Float[Array, " n"],
+        x0: Optional[Float[Array, " n"]] = None,
+    ) -> Float[Array, " n"]:
         """
         Solve A*x = b.
 
@@ -214,6 +233,7 @@ class BiCGStab(AbstractLinearSolver):
         tol: Convergence tolerance for residual norm
         maxiter: Maximum number of iterations
     """
+
     tol: float = eqx.field(static=True)
     maxiter: int = eqx.field(static=True)
 
@@ -222,11 +242,14 @@ class BiCGStab(AbstractLinearSolver):
         self.maxiter = maxiter
 
     def __call__(
-        self, 
-        A: Union[Array, Callable[[Array], Array]],
-        b: Array,
-        x0: Optional[Array] = None
-    ) -> Array:
+        self,
+        A: Union[
+            Float[Array, "n n"],
+            Callable[[Float[Array, " n"]], Float[Array, " n"]],
+        ],
+        b: Float[Array, " n"],
+        x0: Optional[Float[Array, " n"]] = None,
+    ) -> Float[Array, " n"]:
         """
         Solve A*x = b.
 
@@ -242,7 +265,7 @@ class BiCGStab(AbstractLinearSolver):
             A, b, x0=x0, tol=self.tol, maxiter=self.maxiter
         )
         return solution
-    
+
 
 class SpectralOperator(AbstractLinearOperator):
     """Linear operator diagonalised by a known spectral transform.
@@ -254,14 +277,14 @@ class SpectralOperator(AbstractLinearOperator):
         eigvals: Eigenvalues of the linear operator.
     """
 
-    eigvals: Array
+    eigvals: Float[Array, " n"]
 
-    def __init__(self, eigvals: Array) -> None:
+    def __init__(self, eigvals: Float[Array, " n"]) -> None:
         self.eigvals = eigvals
 
-    def system(self, t: Array, h: Array, args: tuple) -> Array:
+    def system(self, t: Float[Array, ""], h: Float[Array, ""], args: tuple) -> Float[Array, " n"]:
         return 1.0 - h * self.eigvals
-    
+
 
 def _identity(x):
     return x
@@ -281,6 +304,7 @@ class SpectralSolver(AbstractLinearSolver):
         backward: Inverse transformation from diagonal basis
         constraint: Pre-processing to enforce compatibility (e.g. mean removal)
     """
+
     forward: Callable[[Array], Array] = eqx.field(static=True)
     backward: Callable[[Array], Array] = eqx.field(static=True)
     constraint: Callable[[Array], Array] = eqx.field(static=True)
@@ -297,10 +321,13 @@ class SpectralSolver(AbstractLinearSolver):
 
     def __call__(
         self,
-        A: Union[Array, Callable[[Array], Array]],
-        b: Array,
-        x0: Optional[Array] = None,
-    ) -> Array:
+        A: Union[
+            Float[Array, " n"],
+            Callable[[Float[Array, " n"]], Float[Array, " n"]],
+        ],
+        b: Float[Array, " n"],
+        x0: Optional[Float[Array, " n"]] = None,
+    ) -> Float[Array, " n"]:
         """Solve the system given the spectral symbol.
 
         Args:

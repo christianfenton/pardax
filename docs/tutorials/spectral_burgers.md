@@ -1,4 +1,4 @@
-# IMEX spectral solver for Burgers' equation
+# Pseudo-spectral solver for Burgers' equation
 
 This is an advanced tutorial demonstrating how to solve Burgers' equation
 using an implicit-explicit (IMEX) scheme. The stiff diffusive term is

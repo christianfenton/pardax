@@ -2,11 +2,15 @@
 
 A JAX-native solver for initial value problems.
 
-![Coverage](coverage.svg)
+[![tests](https://github.com/christianfenton/pardax/actions/workflows/tests.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/tests.yml)
+[![lint](https://github.com/christianfenton/pardax/actions/workflows/lint.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/lint.yml)
+[![docs](https://github.com/christianfenton/pardax/actions/workflows/docs.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/docs.yml)
 
 `pardax` provides a variety of composable time-stepping schemes that 
 work seamlessly with JAX transformations, along with a familiar interface 
 inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
+Check out the [documentation](https://christianfenton.github.io/pardax).
 
 ## Installation
 
@@ -67,18 +71,6 @@ t, y = pdx.solve_ivp(
 )
 ```
 
-## Documentation
-
-Build the documentation cloning the repository and running
-```bash
-uv sync --group docs
-uv run mkdocs build
-```
-or serve them as a local webpage with
-```bash
-uv run mkdocs serve
-```
-
 ## Development
 
 Dependencies are split into the following groups:
@@ -87,10 +79,17 @@ Dependencies are split into the following groups:
 |-------|---------|---------|
 | `test` | pytest, beartype | `uv sync --group test` |
 | `docs` | mkdocs and plugins | `uv sync --group docs` |
+| `lint` | ruff | `uv sync --group lint` |
 | `notebooks` | matplotlib, ipykernel | `uv sync --extra notebooks` |
-| `lint` | ruff, mypy | `uv sync --group lint` |
 
 To install everything at once:
 ```bash
 uv sync --all-groups --all-extras
+```
+
+During development, it might be helpful to serve the documentation locally
+by running:
+```bash
+uv sync --group docs
+uv run mkdocs serve
 ```

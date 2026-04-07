@@ -1,5 +1,6 @@
 site_name: pardax
 site_description: A flexible solver interface for PDEs, written in JAX.
+site_url: https://christianfenton.github.io/pardax
 repo_url: https://github.com/christianfenton/pardax
 repo_name: christianfenton/pardax
 

@@ -3,7 +3,7 @@
 A JAX-native solver for initial value problems.
 
 [![tests](https://github.com/christianfenton/pardax/actions/workflows/tests.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/tests.yml)
-![Coverage](coverage.svg)
+[![codecov](https://codecov.io/gh/christianfenton/pardax/graph/badge.svg)](https://codecov.io/gh/christianfenton/pardax)
 [![lint](https://github.com/christianfenton/pardax/actions/workflows/lint.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/lint.yml)
 [![docs](https://github.com/christianfenton/pardax/actions/workflows/docs.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/docs.yml)
 

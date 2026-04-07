@@ -73,25 +73,8 @@ t, y = pdx.solve_ivp(
 )
 ```
 
-## Development
+## Contributing
 
-Dependencies are split into the following groups:
-
-| Group | Purpose | Install |
-|-------|---------|---------|
-| `test` | pytest, beartype | `uv sync --group test` |
-| `docs` | mkdocs and plugins | `uv sync --group docs` |
-| `lint` | ruff | `uv sync --group lint` |
-| `notebooks` | matplotlib, ipykernel | `uv sync --extra notebooks` |
-
-To install everything at once:
-```bash
-uv sync --all-groups --all-extras
-```
-
-During development, it might be helpful to serve the documentation locally
-by running:
-```bash
-uv sync --group docs
-uv run mkdocs serve
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on setting up a 
+development environment, running tests, linting, and building the documentation
+locally.

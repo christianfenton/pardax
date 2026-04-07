@@ -72,7 +72,9 @@ class DenseOperator(AbstractLinearOperator):
     def __init__(self, op_fn: Callable) -> None:
         self.op_fn = op_fn
 
-    def system(self, t: Float[Array, ""], h: Float[Array, ""], args: tuple) -> Float[Array, "n n"]:
+    def system(
+        self, t: Float[Array, ""], h: Float[Array, ""], args: tuple
+    ) -> Float[Array, "n n"]:
         L = self.op_fn(t, *args)
         return jnp.eye(L.shape[0]) - h * L
 
@@ -282,7 +284,9 @@ class SpectralOperator(AbstractLinearOperator):
     def __init__(self, eigvals: Float[Array, " n"]) -> None:
         self.eigvals = eigvals
 
-    def system(self, t: Float[Array, ""], h: Float[Array, ""], args: tuple) -> Float[Array, " n"]:
+    def system(
+        self, t: Float[Array, ""], h: Float[Array, ""], args: tuple
+    ) -> Float[Array, " n"]:
         return 1.0 - h * self.eigvals
 
 

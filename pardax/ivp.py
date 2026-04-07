@@ -17,7 +17,7 @@ def solve_ivp(
     step_size: float,
     args: tuple = (),
     num_checkpoints: int = 0,
-) -> tuple[Float[Array, " steps"], Float[Array, "steps *state"]]:
+) -> tuple[Float[Array, " steps"], Float[Array, " steps *state"]]:
     """
     Integrate dy/dt = fun(t, y, *args) from t_span[0] to t_span[1].
 
@@ -94,7 +94,7 @@ def integrate(
     stepper: StepperLike,
     step_size_fn: Callable[..., float],
     args: tuple = (),
-) -> tuple[Float[Array, " steps"], Float[Array, "steps *state"]]:
+) -> tuple[Float[Array, " steps"], Float[Array, " steps *state"]]:
     """
     Integrate dy/dt = fun(t, y, *args), returning states at times t_eval.
 

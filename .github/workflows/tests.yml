@@ -22,11 +22,11 @@ jobs:
         run: uv sync --group test
 
       - name: Run tests with coverage
-        run: uv run pytest --cov=pardax
+        run: uv run pytest --cov=pardax --cov-report=xml
 
       - name: Generate coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: uv run coverage-badge -o coverage.svg -f
+        run: uv run genbadge coverage -i coverage.xml -o coverage.svg
 
       - name: Commit coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

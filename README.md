@@ -3,6 +3,7 @@
 A JAX-native solver for initial value problems.
 
 [![tests](https://github.com/christianfenton/pardax/actions/workflows/tests.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/tests.yml)
+![Coverage](coverage.svg)
 [![lint](https://github.com/christianfenton/pardax/actions/workflows/lint.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/lint.yml)
 [![docs](https://github.com/christianfenton/pardax/actions/workflows/docs.yml/badge.svg)](https://github.com/christianfenton/pardax/actions/workflows/docs.yml)
 
@@ -10,7 +11,8 @@ A JAX-native solver for initial value problems.
 work seamlessly with JAX transformations, along with a familiar interface 
 inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
 
-Check out the [documentation](https://christianfenton.github.io/pardax).
+Check out the [documentation page](https://christianfenton.github.io/pardax)
+for more details.
 
 ## Installation
 

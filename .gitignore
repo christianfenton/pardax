@@ -14,9 +14,6 @@ wheels/
 .pytest_cache
 .mypy_cache
 
-# Pytest coverage
-.coverage
-
 # Documentation build
 site/
 

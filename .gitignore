@@ -20,5 +20,8 @@ wheels/
 # Documentation build
 site/
 
-# Dev files
+# Untracked development files
 sandbox/
+
+# Local AI assistant instructions
+CLAUDE.md

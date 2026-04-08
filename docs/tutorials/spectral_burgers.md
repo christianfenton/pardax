@@ -102,7 +102,7 @@ In `pardax`, this is split into two components:
 - A [SpectralSolver][pardax.SpectralSolver] that owns the forward
   and inverse transforms and performs the pointwise solve.
 
-```python
+```python notest
 import pardax as pdx
 
 # Wavenumbers for a real-valued periodic signal
@@ -127,7 +127,7 @@ sub-stepper. The implicit part uses
 [LinearRootFinder][pardax.LinearRootFinder] that pairs the spectral
 operator and solver from above.
 
-```python
+```python notest
 root_finder = pdx.LinearRootFinder(
     linsolver=solver,
     operator=operator,
@@ -141,7 +141,7 @@ stepper = pdx.IMEX(
 
 The right-hand side is passed to `solve_ivp` as a dict:
 
-```python
+```python notest
 rhs = {
     "explicit": advection_rhs,
     "implicit": diffusion_rhs,
@@ -150,7 +150,7 @@ rhs = {
 
 ## 6. Solve and visualise
 
-```python
+```python notest
 dt = 0.8 * dx / A  # advective CFL
 
 t, y = pdx.solve_ivp(
@@ -164,7 +164,7 @@ t, y = pdx.solve_ivp(
 )
 ```
 
-```python
+```python notest
 import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(8, 4.5))

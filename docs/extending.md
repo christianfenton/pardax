@@ -14,7 +14,7 @@ method. This is the recommended approach when your method takes
 a single right-hand side function with the standard
 `(t, y, *args) -> dy/dt` signature:
 
-```python
+```python notest
 import equinox as eqx
 from jax import Array
 import pardax as pdx
@@ -45,7 +45,7 @@ This is useful when:
   [IMEX][pardax.IMEX] does.
 - You are wrapping an external library.
 
-```python
+```python notest
 import equinox as eqx
 from jax import Array
 

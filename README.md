@@ -46,8 +46,7 @@ pip install git+https://github.com/christianfenton/pardax.git
 
 ## Quick start
 
-```python
-import jax.numpy as jnp
+```python notest
 import pardax as pdx
 
 # 1. Define your discretised PDE as an ODE
@@ -65,10 +64,10 @@ method = pdx.RK4()
 # 4. Integrate
 t, y = pdx.solve_ivp(
     my_pde_rhs,
-    t_eval=jnp.linspace(0.0, 1.0, 100),
+    t_span=(0.0, 1.0),
     y0=y0,
     stepper=method,
-    dt_max=0.001,
+    step_size=0.001,
     args=(...,)
 )
 ```

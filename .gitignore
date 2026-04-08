@@ -5,20 +5,17 @@ build/
 dist/
 wheels/
 *.egg-info
-
-# Virtual environments
-.venv
-
-# Caches
 .ruff_cache
 .pytest_cache
 .mypy_cache
-
-# Documentation build
 site/
+
+# Environments and lock files
+.venv
+uv.lock
 
 # Untracked development files
 sandbox/
 
-# Local AI assistant instructions
+# Copilot files
 CLAUDE.md

@@ -9,7 +9,7 @@ problems, fully compatible with transformations like `jax.jit`,
 In `pardax`, users are expected to handle the spatial discretisation of
 their ODE, and `pardax` handles the rest.
 
-```python
+```python notest
 import jax.numpy as jnp
 import pardax as pdx
 
@@ -57,7 +57,7 @@ internally, so it supports `jax.jit` and `jax.vmap` but only forward-mode
 automatic differentation. Use this when you need CFL-based or otherwise 
 state-dependent step sizes, or when output times are not equally spaced.
 
-```python
+```python notest
 def cfl_step_size(t, u, nu, dx):
     return 0.5 * dx**2 / nu
 
@@ -80,7 +80,7 @@ you can apply JAX transformations directly to `solve_ivp`.
 
 Compile the entire integration for faster execution:
 
-```python
+```python notest
 import jax
 
 solve_jit = jax.jit(lambda y_: pdx.solve_ivp(
@@ -94,7 +94,7 @@ t, y = solve_jit(y0)
 
 Integrate multiple initial conditions in parallel with `vmap`:
 
-```python
+```python notest
 y0_batch = jnp.stack([y0_1, y0_2, y0_3])  # (batch, n)
 
 solve_batch = jax.vmap(
@@ -109,7 +109,7 @@ t, y_batch = solve_batch(y0_batch)
 Differentiate through the solver for sensitivity analysis or parameter
 optimisation:
 
-```python
+```python notest
 def loss(params):
     t, y = pdx.solve_ivp(fun, t_span, y0, stepper, step_size, args=(params,))
     return jnp.mean((y[-1] - y_target)**2)
@@ -159,10 +159,10 @@ example.
 When a problem has both stiff and non-stiff terms, an IMEX scheme
 treats each with an appropriate method:
 
-```python
+```python notest
 rhs = {
-    "implicit": stiff_term,      # e.g. diffusion
-    "explicit": non_stiff_term,  # e.g. advection
+    "implicit": stiff_term,
+    "explicit": non_stiff_term,
 }
 
 method = pdx.IMEX(

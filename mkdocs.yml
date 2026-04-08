@@ -4,6 +4,9 @@ site_url: https://christianfenton.github.io/pardax
 repo_url: https://github.com/christianfenton/pardax
 repo_name: christianfenton/pardax
 
+hooks:
+  - docs/hooks.py
+
 theme:
   name: material
 
@@ -49,3 +52,4 @@ nav:
     - Pseudo-spectral methods: tutorials/spectral_burgers.md
   - Extending the Solver: extending.md
   - API Reference: api.md
+  - FAQ: faq.md

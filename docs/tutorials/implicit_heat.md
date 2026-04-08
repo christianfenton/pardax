@@ -111,7 +111,7 @@ Because backward Euler is unconditionally stable for the heat equation,
 we can use a time step much larger than the explicit diffusive CFL
 limit $\Delta t \lesssim \Delta x^2 / (2D)$:
 
-```python
+```python notest
 dt = 1e-1
 
 t, y = pdx.solve_ivp(
@@ -127,7 +127,7 @@ t, y = pdx.solve_ivp(
 
 ## 4. Visualise the results
 
-```python
+```python notest
 import matplotlib.pyplot as plt
 
 plt.style.use('seaborn-v0_8-colorblind')

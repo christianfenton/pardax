@@ -21,11 +21,13 @@ docs = [
     "mkdocs-autorefs>=1.4.4",
     "mkdocs-material>=9.5,<9.6",
     "mkdocstrings-python>=2.0.3",
+    "ruff>=0.15.7",
 ]
 test = [
     "beartype>=0.22.9",
     "pytest>=9.0.2",
     "pytest-cov>=7.1.0",
+    "pytest-markdown-docs>=0.5.0",
 ]
 lint = [
     "mypy>=1.19.1",
@@ -50,4 +52,4 @@ python_version = "3.12"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-addopts = "--jaxtyping-packages=pardax,beartype.beartype"
+addopts = "--jaxtyping-packages=pardax,beartype.beartype --markdown-docs"

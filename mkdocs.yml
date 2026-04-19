@@ -47,9 +47,10 @@ watch:
 nav:
   - Home: index.md
   - Getting Started: guide.md
-  - Extending the Solver: extending.md
   - Tutorials:
-    - Implicit time-stepping: tutorials/implicit_heat.md
-    - Pseudo-spectral methods: tutorials/spectral_burgers.md
+    - Backward Euler: tutorials/implicit_heat.md
+    - Pseudo-spectral IMEX: tutorials/spectral_burgers.md
+    - Bayesian inverse problem: tutorials/bayes_ic_estimation.md
+  - Extending the Solver: extending.md
   - API Reference: api.md
   - FAQ: faq.md

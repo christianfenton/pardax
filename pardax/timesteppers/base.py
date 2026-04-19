@@ -12,7 +12,7 @@ class StepperLike(Protocol):
 
     def step(
         self,
-        rhs: Any,
+        fun: Any,
         t: Float[Array, ""],
         y: Float[Array, "*state"],
         h: Float[Array, ""],
@@ -22,7 +22,7 @@ class StepperLike(Protocol):
     """Advance the solution by one time step.
 
         Args:
-            rhs: Right-hand side of the system of equations
+            fun: Right-hand side of the system of equations
             t: Current time (0-dimensional JAX array)
             y: Current solution
             h: Time step size (0-dimensional JAX array)

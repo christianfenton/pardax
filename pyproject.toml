@@ -1,6 +1,6 @@
 [project]
 name = "pardax"
-version = "0.1.4"
+version = "0.2.0"
 description = "JAX-native solver for initial value problems"
 readme = "README.md"
 requires-python = ">=3.12"

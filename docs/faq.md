@@ -15,5 +15,3 @@ Some of the main differences between these two libraries are:
 - Stepping: `diffrax` has an adaptive step size controller, while `pardax` uses a fixed step size or a user-supplied state-dependent callback (e.g. a CFL condition)
 - Spectral methods: `pardax` has built-in support for spectral methods, which
     `diffrax` doesn't have at the time of writing
-
-If you need the broader feature set that `diffrax` offers, it is likely the better choice.

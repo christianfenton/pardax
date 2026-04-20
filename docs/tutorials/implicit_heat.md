@@ -46,14 +46,17 @@ def laplacian_dirichlet_1d(u, bc_left, bc_right, dx):
     dudx = jnp.diff(u, prepend=bc_left, append=bc_right)
     return jnp.diff(dudx) / dx**2
 
-def heat_rhs(t, u, D, bc_left, bc_right, dx):
+def heat_rhs(t, u, params):
     """Right-hand side: du/dt = D * d²u/dx²."""
-    return D * laplacian_dirichlet_1d(u, bc_left, bc_right, dx)
+    return params["D"] * laplacian_dirichlet_1d(
+        u, params["bc_left"], params["bc_right"], params["dx"]
+    )
 ```
 
 The right-hand side function must have the signature
-`(t, u, *args) -> du/dt`. Any additional parameters (`D`, `bc_left`,
-etc.) are passed through the `args` tuple when calling `solve_ivp`.
+`fun(t, y, params) -> dy/dt`. Any additional parameters (`D`,
+`bc_left`, etc.) are passed as a single `params` pytree when calling
+`solve_ivp`.
 
 ## 2. Parameters and initial condition
 
@@ -83,14 +86,14 @@ y0 = gaussian(x, t_span[0], D, L)
 In `pardax`, implicit time stepping is assembled from composable
 components:
 
-1. A **linear solver** (e.g. [GMRES][pardax.GMRES]) solves the linear
-   system that arises at each Newton iteration.
-2. A **lineariser** (e.g. [AutoJVP][pardax.AutoJVP]) constructs that
+1. A linear solver ([AbstractLinearSolver][pardax.AbstractLinearSolver])
+   solves the linear system that arises at each Newton iteration.
+2. A lineariser ([AbstractLineariser][pardax.AbstractLineariser]) constructs a
    linear system from the nonlinear residual, using automatic
    differentiation or a user-supplied Jacobian.
-3. A **root finder** ([NewtonRaphson][pardax.NewtonRaphson]) drives the
+3. A root finder ([AbstractRootFinder][pardax.AbstractRootFinder]) drives the
    outer Newton iteration to convergence.
-4. A **time stepper** ([BackwardEuler][pardax.BackwardEuler]) defines
+4. A time stepper ([AbstractStepper][pardax.AbstractStepper]) defines
    the implicit residual and delegates to the root finder.
 
 ```python
@@ -112,15 +115,13 @@ we can use a time step much larger than the explicit diffusive CFL
 limit $\Delta t \lesssim \Delta x^2 / (2D)$:
 
 ```python notest
-dt = 1e-1
-
 t, y = pdx.solve_ivp(
     heat_rhs,
     t_span=t_span,
     y0=y0,
     stepper=method,
-    step_size=dt,
-    args=(D, bc_left, bc_right, dx),
+    step_size=1e-1,
+    params={"D": D, "bc_left": bc_left, "bc_right": bc_right, "dx": dx},
     num_checkpoints=2,
 )
 ```

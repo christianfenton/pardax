@@ -47,9 +47,9 @@ watch:
 nav:
   - Home: index.md
   - Getting Started: guide.md
+  - Extending the Solver: extending.md
   - Tutorials:
     - Implicit time-stepping: tutorials/implicit_heat.md
     - Pseudo-spectral methods: tutorials/spectral_burgers.md
-  - Extending the Solver: extending.md
   - API Reference: api.md
   - FAQ: faq.md

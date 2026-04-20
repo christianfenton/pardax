@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 from jaxtyping import Array, Float
 
@@ -8,56 +9,56 @@ from .base import AbstractStepper
 class ForwardEuler(AbstractStepper):
     """Forward Euler method."""
 
-    def step(
+    def __call__(
         self,
-        fun: Callable[..., Float[Array, "*state"]],
+        fun: Callable,
         t: Float[Array, ""],
-        y: Float[Array, "*state"],
-        h: Float[Array, ""],
-        args: tuple = (),
-    ) -> Float[Array, "*state"]:
+        y: Float[Array, "..."],
+        step_size: Float[Array, ""],
+        params: Any = None,
+    ) -> tuple[Float[Array, "..."], "ForwardEuler"]:
         """Perform a single Forward Euler step.
 
-        Computes y_next = y_curr + h * f(t_curr, y_curr, *args).
+        Computes y_next = y + step_size * fun(t, y, params).
 
         Args:
-            fun: Right-hand side of system dydt = f(t, y, *args)
+            fun: Right-hand side fun(t, y, params) -> dy/dt
             t: Current time
             y: Current solution
-            h: Time step size
-            args: Additional arguments to pass to fun
+            step_size: Time step size
+            params: Parameters passed through to fun
 
         Returns:
-            Solution at t + h
+            Tuple of the new solution and stepper instance (y, stepper)
         """
-        return y + h * fun(t, y, *args)
+        return y + step_size * fun(t, y, params), self
 
 
 class RK4(AbstractStepper):
     """Fourth (4th) order Runge-Kutta method."""
 
-    def step(
+    def __call__(
         self,
-        fun: Callable[..., Float[Array, "*state"]],
+        fun: Callable,
         t: Float[Array, ""],
-        y: Float[Array, "*state"],
-        h: Float[Array, ""],
-        args: tuple = (),
-    ) -> Float[Array, "*state"]:
+        y: Float[Array, "..."],
+        step_size: Float[Array, ""],
+        params: Any = None,
+    ) -> tuple[Float[Array, "..."], "RK4"]:
         """Perform a single RK4 step.
 
         Args:
-            fun: Right-hand side of system dy/dt = f(t, y, *args)
+            fun: Right-hand side fun(t, y, params) -> dy/dt
             t: Current time
             y: Current solution
-            h: Time step size
-            args: Additional arguments to pass to fun
+            step_size: Time step size
+            params: Parameters passed through to fun
 
         Returns:
-            Solution at t + h
+            Tuple of the new solution and stepper instance (y, stepper)
         """
-        k1 = fun(t, y, *args)
-        k2 = fun(t + 0.5 * h, y + 0.5 * h * k1, *args)
-        k3 = fun(t + 0.5 * h, y + 0.5 * h * k2, *args)
-        k4 = fun(t + h, y + h * k3, *args)
-        return y + (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        k1 = fun(t, y, params)
+        k2 = fun(t + 0.5 * step_size, y + 0.5 * step_size * k1, params)
+        k3 = fun(t + 0.5 * step_size, y + 0.5 * step_size * k2, params)
+        k4 = fun(t + step_size, y + step_size * k3, params)
+        return y + (step_size / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4), self

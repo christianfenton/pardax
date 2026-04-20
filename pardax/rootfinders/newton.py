@@ -21,7 +21,7 @@ class AbstractLineariser(eqx.Module):
         self,
         fun: Callable[..., Float[Array, "*state"]],
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
     ) -> Callable[
         [Float[Array, "*state"], Float[Array, "*state"]],
@@ -43,7 +43,7 @@ class AutoJVP(AbstractLineariser):
         self,
         fun: Callable[..., Float[Array, "*state"]],
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
     ) -> Callable[
         [Float[Array, "*state"], Float[Array, "*state"]],
@@ -56,7 +56,7 @@ class AutoJVP(AbstractLineariser):
 
             def matvec(v: Float[Array, "*state"]) -> Float[Array, "*state"]:
                 _, df_v = jax.jvp(lambda y_: fun(t, y_, *args), (y,), (v,))
-                return v - h * df_v
+                return v - step_size * df_v
 
             return self.linsolver(matvec, -r)
 
@@ -79,7 +79,7 @@ class JVP(AbstractLineariser):
         self,
         fun: Any,
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
     ) -> Callable[
         [Float[Array, "*state"], Float[Array, "*state"]],
@@ -90,7 +90,7 @@ class JVP(AbstractLineariser):
             r: Float[Array, "*state"], y: Float[Array, "*state"]
         ) -> Float[Array, "*state"]:
             return self.linsolver(
-                lambda v: v - h * self.jvp_fn(t, y, v, *args), -r
+                lambda v: v - step_size * self.jvp_fn(t, y, v, *args), -r
             )
 
         return solve
@@ -112,7 +112,7 @@ class Jacobian(AbstractLineariser):
         self,
         fun: Any,
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
     ) -> Callable[
         [Float[Array, "*state"], Float[Array, "*state"]],
@@ -122,7 +122,7 @@ class Jacobian(AbstractLineariser):
         def solve(
             r: Float[Array, "*state"], y: Float[Array, "*state"]
         ) -> Float[Array, "*state"]:
-            J = jnp.eye(y.size) - h * self.jac_fn(t, y, *args)
+            J = jnp.eye(y.size) - step_size * self.jac_fn(t, y, *args)
             return self.linsolver(J, -r)
 
         return solve
@@ -162,7 +162,7 @@ class NewtonRaphson(AbstractRootFinder):
         y_guess: Float[Array, "*state"],
         fun: Callable[..., Float[Array, "*state"]],
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
         theta: float = 1.0,
     ) -> Float[Array, "*state"]:
@@ -174,14 +174,14 @@ class NewtonRaphson(AbstractRootFinder):
             y_guess: Initial guess
             fun: Right-hand side function (passed to lineariser)
             t: Time at which to evaluate the linearisation
-            h: Time step size
+            step_size: Time step size
             args: Additional arguments to pass to fun
             theta: Implicit coefficient (see AbstractRootFinder)
 
         Returns:
             Solution y
         """
-        solve_linear = self.lineariser(fun, t, theta * h, args)
+        solve_linear = self.lineariser(fun, t, theta * step_size, args)
 
         y_k = y_guess
         r_k = residual_fn(y_k)

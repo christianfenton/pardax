@@ -9,59 +9,66 @@ the relevant abstract base class.
 ### Subclassing `AbstractStepper`
 
 The simplest way to add a new time-stepping method is to subclass
-[AbstractStepper][pardax.AbstractStepper] and implement the `step`
-method. This is the recommended approach when your method takes
-a single right-hand side function with the standard
-`(t, y, *args) -> dy/dt` signature:
+[AbstractStepper][pardax.AbstractStepper] and implement `__call__`.
+This is the recommended approach when your method takes a single
+right-hand side function with the standard `fun(t, y, params) -> dy/dt`
+signature:
 
 ```python notest
-import equinox as eqx
-from jax import Array
 import pardax as pdx
 
 class Heun(pdx.AbstractStepper):
 
-    def step(self, fun, t, y, h, args=()):
+    def __call__(self, fun, t, y, step_size, params=None):
         """Heun's method."""
-        k1 = fun(t, y, *args)
-        k2 = fun(t + h, y + h * k1, *args)
-        return y + 0.5 * h * (k1 + k2)
+        k1 = fun(t, y, params)
+        k2 = fun(t + step_size, y + step_size * k1, params)
+        return y + 0.5 * step_size * (k1 + k2), self
 
-t, y = pdx.solve_ivp(fun, t_span, y0, Heun(), step_size=0.01, args=args)
+t, y = pdx.solve_ivp(fun, t_span, y0, Heun(), step_size=0.01, params=params)
 ```
 
 ### Duck typing with `StepperLike`
 
 [solve_ivp][pardax.solve_ivp] accepts any object that satisfies the
-[StepperLike][pardax.StepperLike] protocol -- that is, any object with
-a `step(self, fun, t, y, h, args=())` method that returns an `Array`.
-You do not need to inherit from `AbstractStepper`.
+[StepperLike][pardax.StepperLike] protocol - that is, any object with a
+`__call__(self, fun, t, y, step_size, params=None)` method that returns
+`(y_new, updated_stepper)`. This does not need to inherit from `AbstractStepper`.
 
 This is useful when:
 
-- Your stepper needs a different kind of right-hand side (e.g. a dict,
-  a named tuple, or a custom object).
-- You want to compose multiple sub-steppers, as
-  [IMEX][pardax.IMEX] does.
-- You are wrapping an external library.
+- The stepper carries internal state between steps (e.g. a multi-step method)
+- Wrapping an external library
 
 ```python notest
 import equinox as eqx
-from jax import Array
+import jax
 
-class MyProjectionStepper(eqx.Module):
-    """A stepper whose `fun` returns (tendency, projection) pairs."""
+class AdamsBashforth2(eqx.Module):
+    """Two-step Adams-Bashforth. Initialise f_prev with zeros or a warm-up step."""
 
-    def step(self, fun, t, y, h, args=()):
-        tendency, project = fun(t, y, *args)
-        return project(y + h * tendency)
+    f_prev: jax.Array
 
-t, y = pdx.solve_ivp(fun, t_span, y0, MyProjectionStepper(), step_size=0.01)
+    def __call__(self, fun, t, y, step_size, params=None):
+        f_curr = fun(t, y, params)
+        y_new = y + step_size * (1.5 * f_curr - 0.5 * self.f_prev)
+        return y_new, eqx.tree_at(lambda s: s.f_prev, self, f_curr)
+
+stepper = AdamsBashforth2(f_prev=jnp.zeros_like(y0))
+t, y = pdx.solve_ivp(fun, t_span, y0, stepper, step_size=0.01, params=params)
 ```
 
-The built-in [IMEX][pardax.IMEX] stepper is an example of this
-pattern: it accepts a `dict` with `"implicit"` and `"explicit"` keys
-and delegates each part to a separate `AbstractStepper`.
+### IMEX splitting
+
+An implicit-explicit (IMEX) scheme treats stiff and non-stiff parts of the
+right-hand side separately. Because `solve_ivp` and `integrate` expect a
+single callable as `fun`, IMEX schemes requires writing a custom 
+time-stepping loop directly with `jax.lax.scan` or `jax.lax.while_loop`. 
+Each sub-stepper receives its own callable, and the updated stepper state 
+is carried through the loop.
+
+See the [Burgers' equation tutorial](tutorials/spectral_burgers.md) for a
+worked example of a pseudo-spectral IMEX scheme.
 
 ## Custom root finders
 
@@ -95,7 +102,7 @@ Users can add new solvers by subclassing
 
 ## Custom linear operators
 
-Linear operators build the implicit system `(I - h * L)` for use with
+Linear operators build the implicit system `(I - step_size * L)` for use with
 [LinearRootFinder][pardax.LinearRootFinder]. Each operator returns the
 system in the form expected by its paired linear solver.
 

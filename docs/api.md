@@ -10,10 +10,10 @@ Main entry points for integrating ODE systems.
 
 ## Time-stepping schemes
 
-Explicit, implicit, and split (IMEX) methods. All built-in steppers
-inherit from [AbstractStepper][pardax.AbstractStepper]. Custom steppers
-can also be used via the [StepperLike][pardax.StepperLike] protocol
-(see [Extending the solver](extending.md)).
+Explicit and implicit methods. All built-in steppers inherit from
+[AbstractStepper][pardax.AbstractStepper]. Custom steppers can also be
+used via the [StepperLike][pardax.StepperLike] protocol (see
+[Extending the solver](extending.md) for IMEX and other examples).
 
 ### Explicit
 
@@ -24,10 +24,6 @@ can also be used via the [StepperLike][pardax.StepperLike] protocol
 ### Implicit
 
 ::: pardax.BackwardEuler
-
-### Split (IMEX)
-
-::: pardax.IMEX
 
 ### Base classes
 

@@ -1,0 +1,810 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A flexible solver interface for PDEs, written in JAX.">
+      
+      
+      
+        <link rel="canonical" href="https://christianfenton.github.io/pardax/tutorials/spectral_burgers/">
+      
+      
+        <link rel="prev" href="../implicit_heat/">
+      
+      
+        <link rel="next" href="../bayes_ic_estimation/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50">
+    
+    
+      
+        <title>Pseudo-spectral IMEX - pardax</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.a40c8224.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pseudo-spectral-solver-for-burgers-equation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="pardax" class="md-header__button md-logo" aria-label="pardax" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pardax
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pseudo-spectral IMEX
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/christianfenton/pardax" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    christianfenton/pardax
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="pardax" class="md-nav__button md-logo" aria-label="pardax" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    pardax
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/christianfenton/pardax" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    christianfenton/pardax
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Tutorials
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../implicit_heat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backward Euler
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Pseudo-spectral IMEX
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Pseudo-spectral IMEX
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Problem statement
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-imex" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why IMEX?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-spatial-discretisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Spatial discretisation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-parameters-and-initial-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Parameters and initial condition
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-choosing-a-spectral-transform" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Choosing a spectral transform
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-constructing-the-spectral-operator-and-solver" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Constructing the spectral operator and solver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-assembling-the-imex-stepper" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Assembling the IMEX stepper
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-solve-and-visualise" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Solve and visualise
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bayes_ic_estimation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bayesian inverse problem
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extending/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Extending the Solver
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Problem statement
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-imex" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why IMEX?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-spatial-discretisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Spatial discretisation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-parameters-and-initial-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Parameters and initial condition
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-choosing-a-spectral-transform" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Choosing a spectral transform
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-constructing-the-spectral-operator-and-solver" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Constructing the spectral operator and solver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-assembling-the-imex-stepper" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Assembling the IMEX stepper
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-solve-and-visualise" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Solve and visualise
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="pseudo-spectral-solver-for-burgers-equation">Pseudo-spectral solver for Burgers' equation<a class="headerlink" href="#pseudo-spectral-solver-for-burgers-equation" title="Permanent link">&para;</a></h1>
+<p>This is an advanced tutorial demonstrating how to solve Burgers' equation
+using an implicit-explicit (IMEX) scheme. The stiff diffusive term is
+treated implicitly with a spectral linear solver, while the non-linear
+convective term is treated explicitly with RK4.</p>
+<h2 id="problem-statement">Problem statement<a class="headerlink" href="#problem-statement" title="Permanent link">&para;</a></h2>
+<p>The 1D viscous Burgers' equation is</p>
+<div class="arithmatex">\[ \frac{\partial u}{\partial t} = -u \frac{\partial u}{\partial x} + \nu \frac{\partial^2 u}{\partial x^2}, \]</div>
+<p>where <span class="arithmatex">\(\nu\)</span> is the kinematic viscosity. The equation combines non-linear
+advection (<span class="arithmatex">\(-u \frac{\partial u}{\partial x}\)</span>) with linear diffusion 
+(<span class="arithmatex">\(\nu \frac{\partial^2 u}{\partial x^2}\)</span>), making it a useful
+model for understanding shock formation and numerical
+stiffness.</p>
+<p>We solve on a periodic domain <span class="arithmatex">\(x \in [0, L)\)</span> with initial condition</p>
+<div class="arithmatex">\[ u(x, 0) = A \sin(2\pi x / L). \]</div>
+<h2 id="why-imex">Why IMEX?<a class="headerlink" href="#why-imex" title="Permanent link">&para;</a></h2>
+<p>A fully explicit method must respect both stability limits:</p>
+<ul>
+<li>Diffusive CFL: <span class="arithmatex">\(\Delta t \lesssim \Delta x^2 / (2\nu)\)</span></li>
+<li>Advective CFL: <span class="arithmatex">\(\Delta t \lesssim \Delta x / \max|u|\)</span></li>
+</ul>
+<p>On fine grids or for large <span class="arithmatex">\(\nu\)</span>, the diffusive constraint dominates because
+it scales as <span class="arithmatex">\(\Delta x^2\)</span>. By treating diffusion implicitly, we
+eliminate the diffusive CFL restriction entirely and only need to
+satisfy the less restrictive advective CFL condition. In practice, this
+typically allows much larger time steps.</p>
+<h2 id="1-spatial-discretisation">1. Spatial discretisation<a class="headerlink" href="#1-spatial-discretisation" title="Permanent link">&para;</a></h2>
+<p>We discretise on a uniform periodic grid with <span class="arithmatex">\(n\)</span> points and spacing
+<span class="arithmatex">\(\Delta x = L / n\)</span>. Both the Laplacian and the first derivative use
+second-order central finite differences.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">diffusion_rhs</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diffusion: nu * d²u/dx² (periodic, central differences).&quot;&quot;&quot;</span>
+    <span class="n">nu</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;nu&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dx&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">nu</span> <span class="o">*</span> <span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">u</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">dx</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">advection_rhs</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Advection: -u * du/dx (periodic, central differences).&quot;&quot;&quot;</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dx&quot;</span><span class="p">]</span>
+    <span class="n">dudx</span> <span class="o">=</span> <span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">jnp</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dx</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">u</span> <span class="o">*</span> <span class="n">dudx</span>
+</code></pre></div>
+<p>Both functions receive the same <code>params</code> dict; <code>advection_rhs</code> ignores
+<code>nu</code>, but the shared signature keeps the interface uniform.</p>
+<h2 id="2-parameters-and-initial-condition">2. Parameters and initial condition<a class="headerlink" href="#2-parameters-and-initial-condition" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">nu</span> <span class="o">=</span> <span class="mf">1e-1</span>       <span class="c1"># viscosity</span>
+<span class="n">L</span> <span class="o">=</span> <span class="mf">10.0</span>        <span class="c1"># domain length</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">256</span>         <span class="c1"># number of grid points</span>
+<span class="n">dx</span> <span class="o">=</span> <span class="n">L</span> <span class="o">/</span> <span class="n">n</span>
+<span class="n">A</span> <span class="o">=</span> <span class="mf">1.0</span>         <span class="c1"># initial amplitude</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span>
+<span class="n">y0</span> <span class="o">=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">L</span><span class="p">)</span>
+
+<span class="n">t_span</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="3-choosing-a-spectral-transform">3. Choosing a spectral transform<a class="headerlink" href="#3-choosing-a-spectral-transform" title="Permanent link">&para;</a></h2>
+<p>The choice of spectral transform is dictated by the boundary conditions.</p>
+<p>Since our problem has periodic boundary conditions, we use the
+real-valued DFT via <code>jnp.fft.rfft</code> / <code>jnp.fft.irfft</code>.</p>
+<p>In other cases, a discrete cosine or sine transform may be the better choice.</p>
+<h2 id="4-constructing-the-spectral-operator-and-solver">4. Constructing the spectral operator and solver<a class="headerlink" href="#4-constructing-the-spectral-operator-and-solver" title="Permanent link">&para;</a></h2>
+<p>The spectral approach works by diagonalising the discrete Laplacian.
+For the second-order central difference stencil on a periodic grid,
+the eigenvalues are</p>
+<div class="arithmatex">\[ \sigma_k = \frac{-4 \sin^2(k \Delta x / 2)}{\Delta x^2}, \]</div>
+<p>where <span class="arithmatex">\(k = 2\pi m / L\)</span> are the discrete wavenumbers. The implicit
+system at each time step is <span class="arithmatex">\((I - \Delta t \nu \sigma_k)\hat{u}_k = \hat{b}_k\)</span>,
+which reduces to a pointwise division in Fourier space.</p>
+<p>In <code>pardax</code>, this is split into two components:</p>
+<ul>
+<li>A <a class="autorefs autorefs-internal" title="pardax.SpectralOperator" href="../../api/#pardax.SpectralOperator">SpectralOperator</a> that holds the
+  eigenvalues <span class="arithmatex">\(\nu \sigma_k\)</span> and builds the spectral symbol
+  <span class="arithmatex">\(1 - \Delta t \nu \sigma_k\)</span> at each time step.</li>
+<li>A <a class="autorefs autorefs-internal" title="pardax.SpectralSolver" href="../../api/#pardax.SpectralSolver">SpectralSolver</a> that owns the forward
+  and inverse transforms and performs the pointwise solve.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pardax</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pdx</span>
+
+<span class="c1"># Wavenumbers for a real-valued periodic signal</span>
+<span class="n">k</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">dx</span><span class="p">)</span>
+
+<span class="c1"># Eigenvalues of the discrete Laplacian (including viscosity)</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="o">-</span><span class="mi">4</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">dx</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="n">operator</span> <span class="o">=</span> <span class="n">pdx</span><span class="o">.</span><span class="n">SpectralOperator</span><span class="p">(</span><span class="n">eigvals</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span>
+
+<span class="n">solver</span> <span class="o">=</span> <span class="n">pdx</span><span class="o">.</span><span class="n">SpectralSolver</span><span class="p">(</span>
+    <span class="n">forward</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">,</span>
+    <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="5-assembling-the-imex-stepper">5. Assembling the IMEX stepper<a class="headerlink" href="#5-assembling-the-imex-stepper" title="Permanent link">&para;</a></h2>
+<p>IMEX splitting requires a custom time-stepping loop because <code>solve_ivp</code> and
+<code>integrate</code> expect a single callable as <code>fun</code>. Each sub-stepper receives its
+own callable and the updated stepper state is threaded through the loop carry
+(see <a href="../../extending/#imex-splitting">Extending the solver</a> for a full
+explanation).</p>
+<div class="highlight"><pre><span></span><code><span class="n">root_finder</span> <span class="o">=</span> <span class="n">pdx</span><span class="o">.</span><span class="n">LinearRootFinder</span><span class="p">(</span>
+    <span class="n">linsolver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
+    <span class="n">operator</span><span class="o">=</span><span class="n">operator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">explicit</span> <span class="o">=</span> <span class="n">pdx</span><span class="o">.</span><span class="n">RK4</span><span class="p">()</span>
+<span class="n">implicit</span> <span class="o">=</span> <span class="n">pdx</span><span class="o">.</span><span class="n">BackwardEuler</span><span class="p">(</span><span class="n">root_finder</span><span class="o">=</span><span class="n">root_finder</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="6-solve-and-visualise">6. Solve and visualise<a class="headerlink" href="#6-solve-and-visualise" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;nu&quot;</span><span class="p">:</span> <span class="n">nu</span><span class="p">,</span> <span class="s2">&quot;dx&quot;</span><span class="p">:</span> <span class="n">dx</span><span class="p">}</span>
+<span class="n">step_size</span> <span class="o">=</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">/</span> <span class="n">A</span>  <span class="c1"># advective CFL</span>
+<span class="n">num_steps</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">t_span</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_span</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">step_size</span><span class="p">)</span>
+<span class="n">step_size</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">((</span><span class="n">t_span</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_span</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">num_steps</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">imex_step</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+    <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">exp_st</span><span class="p">,</span> <span class="n">imp_st</span> <span class="o">=</span> <span class="n">carry</span>
+    <span class="n">y_star</span><span class="p">,</span> <span class="n">exp_st</span> <span class="o">=</span> <span class="n">exp_st</span><span class="p">(</span><span class="n">advection_rhs</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="n">y_new</span><span class="p">,</span> <span class="n">imp_st</span> <span class="o">=</span> <span class="n">imp_st</span><span class="p">(</span><span class="n">diffusion_rhs</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y_star</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">y_new</span><span class="p">,</span> <span class="n">exp_st</span><span class="p">,</span> <span class="n">imp_st</span><span class="p">),</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">y_new</span><span class="p">)</span>
+
+<span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">y_final</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="p">(</span><span class="n">t_all</span><span class="p">,</span> <span class="n">y_all</span><span class="p">)</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+    <span class="n">imex_step</span><span class="p">,</span> <span class="p">(</span><span class="n">t_span</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y0</span><span class="p">,</span> <span class="n">explicit</span><span class="p">,</span> <span class="n">implicit</span><span class="p">),</span> <span class="n">length</span><span class="o">=</span><span class="n">num_steps</span>
+<span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">))</span>
+<span class="n">stride</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_all</span><span class="p">)</span> <span class="o">//</span> <span class="mi">5</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_all</span><span class="p">),</span> <span class="n">stride</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y_all</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;$t = </span><span class="si">{</span><span class="n">t_all</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$x$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$u(t, x)$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div>
+<p><img alt="Burgers equation solution" src="../../assets/burgers_solution.png" /></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -44,19 +44,20 @@ second-order central finite differences.
 import jax
 import jax.numpy as jnp
 
-def diffusion_rhs(t, u, nu, dx):
+def diffusion_rhs(t, u, params):
     """Diffusion: nu * d²u/dx² (periodic, central differences)."""
+    nu, dx = params["nu"], params["dx"]
     return nu * (jnp.roll(u, -1) - 2 * u + jnp.roll(u, 1)) / dx**2
 
-def advection_rhs(t, u, nu, dx):
+def advection_rhs(t, u, params):
     """Advection: -u * du/dx (periodic, central differences)."""
+    dx = params["dx"]
     dudx = (jnp.roll(u, -1) - jnp.roll(u, 1)) / (2 * dx)
     return -u * dudx
 ```
 
-Note that both functions receive the same `args = (nu, dx)` tuple.
-The advection term does not use `nu`, but the shared signature is
-required by `pardax`'s argument-passing convention.
+Both functions receive the same `params` dict; `advection_rhs` ignores
+`nu`, but the shared signature keeps the interface uniform.
 
 ## 2. Parameters and initial condition
 
@@ -91,14 +92,14 @@ the eigenvalues are
 $$ \sigma_k = \frac{-4 \sin^2(k \Delta x / 2)}{\Delta x^2}, $$
 
 where $k = 2\pi m / L$ are the discrete wavenumbers. The implicit
-system at each time step is $(I - h \nu \sigma_k)\hat{u}_k = \hat{b}_k$,
+system at each time step is $(I - \Delta t \nu \sigma_k)\hat{u}_k = \hat{b}_k$,
 which reduces to a pointwise division in Fourier space.
 
 In `pardax`, this is split into two components:
 
 - A [SpectralOperator][pardax.SpectralOperator] that holds the
   eigenvalues $\nu \sigma_k$ and builds the spectral symbol
-  $1 - h \nu \sigma_k$ at each time step.
+  $1 - \Delta t \nu \sigma_k$ at each time step.
 - A [SpectralSolver][pardax.SpectralSolver] that owns the forward
   and inverse transforms and performs the pointwise solve.
 
@@ -121,11 +122,11 @@ solver = pdx.SpectralSolver(
 
 ## 5. Assembling the IMEX stepper
 
-The [IMEX][pardax.IMEX] stepper composes an explicit and an implicit
-sub-stepper. The implicit part uses
-[BackwardEuler][pardax.BackwardEuler] with a
-[LinearRootFinder][pardax.LinearRootFinder] that pairs the spectral
-operator and solver from above.
+IMEX splitting requires a custom time-stepping loop because `solve_ivp` and
+`integrate` expect a single callable as `fun`. Each sub-stepper receives its
+own callable and the updated stepper state is threaded through the loop carry
+(see [Extending the solver](../extending.md#imex-splitting) for a full
+explanation).
 
 ```python notest
 root_finder = pdx.LinearRootFinder(
@@ -133,34 +134,28 @@ root_finder = pdx.LinearRootFinder(
     operator=operator,
 )
 
-stepper = pdx.IMEX(
-    explicit=pdx.RK4(),
-    implicit=pdx.BackwardEuler(root_finder=root_finder),
-)
-```
-
-The right-hand side is passed to `solve_ivp` as a dict:
-
-```python notest
-rhs = {
-    "explicit": advection_rhs,
-    "implicit": diffusion_rhs,
-}
+explicit = pdx.RK4()
+implicit = pdx.BackwardEuler(root_finder=root_finder)
 ```
 
 ## 6. Solve and visualise
 
 ```python notest
-dt = 0.8 * dx / A  # advective CFL
+import math
 
-t, y = pdx.solve_ivp(
-    rhs,
-    t_span=t_span,
-    y0=y0,
-    stepper=stepper,
-    step_size=dt,
-    args=(nu, dx),
-    num_checkpoints=9,
+params = {"nu": nu, "dx": dx}
+step_size = 0.8 * dx / A  # advective CFL
+num_steps = math.ceil((t_span[1] - t_span[0]) / step_size)
+step_size = jnp.asarray((t_span[1] - t_span[0]) / num_steps)
+
+def imex_step(carry, _):
+    t, y, exp_st, imp_st = carry
+    y_star, exp_st = exp_st(advection_rhs, t, y, step_size, params)
+    y_new, imp_st = imp_st(diffusion_rhs, t, y_star, step_size, params)
+    return (t + step_size, y_new, exp_st, imp_st), (t + step_size, y_new)
+
+(_, y_final, _, _), (t_all, y_all) = jax.lax.scan(
+    imex_step, (t_span[0], y0, explicit, implicit), length=num_steps
 )
 ```
 
@@ -168,8 +163,9 @@ t, y = pdx.solve_ivp(
 import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
-for i in range(0, len(t), 2):
-    ax.plot(x, y[i], label=f"$t = {t[i]:.1f}$")
+stride = max(1, len(t_all) // 5)
+for i in range(0, len(t_all), stride):
+    ax.plot(x, y_all[i], label=f"$t = {t_all[i]:.1f}$")
 ax.set_xlabel("$x$")
 ax.set_ylabel("$u(t, x)$")
 ax.legend()

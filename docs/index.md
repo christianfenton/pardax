@@ -39,8 +39,8 @@ pip install git+https://github.com/christianfenton/pardax.git
 ## Next steps
 
 - [Getting started](guide.md)
-- [Heat equation with backward Euler](tutorials/implicit_heat.md)
-- [Burgers' equation with a pseudo-spectral method](tutorials/spectral_burgers.md)
+- [Tutorial: Heat equation with backward Euler](tutorials/implicit_heat.md)
+- [Tutorial: Burgers' equation with a pseudo-spectral method](tutorials/spectral_burgers.md)
 - [Extending the solver](extending.md)
 - [API reference](api.md)
 

@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 from jaxtyping import Array, Float
 
@@ -16,33 +17,42 @@ class BackwardEuler(AbstractStepper):
     ) -> None:
         self.root_finder = root_finder
 
-    def step(
+    def __call__(
         self,
-        fun: Callable[..., Float[Array, "*state"]],
+        fun: Callable,
         t: Float[Array, ""],
-        y: Float[Array, "*state"],
-        h: Float[Array, ""],
-        args: tuple = (),
-    ) -> Float[Array, "*state"]:
-        """Perform a single backward Euler step.
+        y: Float[Array, "..."],
+        step_size: Float[Array, ""],
+        params: Any = None,
+    ) -> tuple[Float[Array, "..."], "BackwardEuler"]:
+        """Perform a single Backward Euler step.
 
-        Solves y_next = y_n + h * f(t_next, y_next, *args) at each time step.
+        Solves y_next = y + step_size * fun(t + step_size, y_next, params).
 
         Args:
-            fun: Right-hand side of system dy/dt = f(t, y, *args)
+            fun: Right-hand side fun(t, y, params) -> dy/dt
             t: Current time
             y: Current solution
-            h: Time step size
-            args: Additional arguments to pass to fun
+            step_size: Time step size
+            params: Parameters passed through to fun
 
         Returns:
-            Solution at t + h
+            Tuple of the new solution and stepper instance (y, stepper)
         """
 
-        def residual(y_next: Float[Array, "*state"]) -> Float[Array, "*state"]:
-            return y_next - y - h * fun(t + h, y_next, *args)
+        def residual(y_next):
+            return y_next - y - step_size * fun(t + step_size, y_next, params)
 
-        y0 = y + h * fun(t, y, *args)
-        return self.root_finder(
-            residual, y0, fun=fun, t=t + h, h=h, args=args, theta=1.0
+        y_guess = y + step_size * fun(t, y, params)  # Forward Euler step
+
+        y_new = self.root_finder(
+            residual,
+            y_guess,
+            fun=fun,
+            t=t + step_size,
+            step_size=step_size,
+            args=(params,),
+            theta=1.0,
         )
+
+        return y_new, self

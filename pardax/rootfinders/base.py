@@ -19,7 +19,7 @@ class AbstractRootFinder(eqx.Module):
         y_guess: Float[Array, "*state"],
         fun: Callable[..., Float[Array, "*state"]],
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
         theta: float = 1.0,
     ) -> Float[Array, "*state"]:
@@ -31,10 +31,10 @@ class AbstractRootFinder(eqx.Module):
             y_guess: Initial guess for the solution
             fun: Right-hand side function dy/dt = fun(t, y, *args)
             t: Time at which to evaluate the linearisation
-            h: Time step size
+            step_size: Time step size
             args: Additional arguments to pass to fun
             theta: Implicit coefficient. The system matrix is built as
-                (I - theta * h * L). For backward Euler theta=1.0,
+                (I - theta * step_size * L). For backward Euler theta=1.0,
                 for Crank-Nicolson theta=0.5, etc. Passed by the
                 time stepper; users do not set this directly.
 

@@ -5,7 +5,7 @@ import pytest
 import jax.numpy as jnp
 
 from pardax.ivp import solve_ivp, integrate
-from pardax.timesteppers import ForwardEuler, BackwardEuler, RK4, IMEX
+from pardax.timesteppers import ForwardEuler, BackwardEuler, RK4
 from pardax.rootfinders import NewtonRaphson, AutoJVP, LinearRootFinder
 from pardax.linalg import GMRES, SpectralOperator, SpectralSolver
 from pardax.transform import dst1, idst1
@@ -16,8 +16,10 @@ def laplacian_dirichlet_1d(u, bc_left, bc_right, dx):
     return jnp.diff(dudx) / dx**2
 
 
-def heat_rhs(t, u, diffusivity, bc_left, bc_right, dx):
-    return diffusivity * laplacian_dirichlet_1d(u, bc_left, bc_right, dx)
+def heat_rhs(t, u, params):
+    return params["D"] * laplacian_dirichlet_1d(
+        u, params["bc_left"], params["bc_right"], params["dx"]
+    )
 
 
 def gaussian(x, t, diffusivity, length):
@@ -51,28 +53,28 @@ class TestForwardEuler:
         return ForwardEuler()
 
     @pytest.fixture
-    def dt(self, heat_setup):
+    def step_size(self, heat_setup):
         return 0.5 * heat_setup["dx"] ** 2 / heat_setup["D"]
 
     @pytest.fixture
-    def atol(self, dt, heat_setup):
-        return max(dt, heat_setup["dx"] ** 2)
+    def atol(self, step_size, heat_setup):
+        return max(step_size, heat_setup["dx"] ** 2)
 
-    def test_solve_ivp(self, heat_setup, stepper, dt, atol):
+    def test_solve_ivp(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_span = (1.0, 5.0)
         y0 = gaussian(x, t_span[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
         t, y = solve_ivp(
             heat_rhs,
             t_span=t_span,
             y0=y0,
             stepper=stepper,
-            step_size=dt,
-            args=(diffusivity, bc_left, bc_right, dx),
+            step_size=step_size,
+            params=params,
             num_checkpoints=2,
         )
 
@@ -81,16 +83,16 @@ class TestForwardEuler:
                 y[i], gaussian(x, t[i], diffusivity, length), atol=atol
             )
 
-    def test_adaptive_solve(self, heat_setup, stepper, dt, atol):
+    def test_adaptive_solve(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_eval = jnp.linspace(1.0, 5.0, 4)
         y0 = gaussian(x, t_eval[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
-        def step_size_fn(t, u, D, bc_left, bc_right, dx):
-            return dt
+        def step_size_fn(t, u, params):
+            return step_size
 
         t, y = integrate(
             heat_rhs,
@@ -98,7 +100,7 @@ class TestForwardEuler:
             y0=y0,
             stepper=stepper,
             step_size_fn=step_size_fn,
-            args=(diffusivity, bc_left, bc_right, heat_setup["dx"]),
+            params=params,
         )
 
         for i in range(len(t)):
@@ -112,28 +114,28 @@ class TestRK4:
         return RK4()
 
     @pytest.fixture
-    def dt(self, heat_setup):
+    def step_size(self, heat_setup):
         return 0.5 * heat_setup["dx"] ** 2 / heat_setup["D"]
 
     @pytest.fixture
-    def atol(self, dt, heat_setup):
-        return max(dt**4, heat_setup["dx"] ** 2)
+    def atol(self, step_size, heat_setup):
+        return max(step_size**4, heat_setup["dx"] ** 2)
 
-    def test_solve_ivp(self, heat_setup, stepper, dt, atol):
+    def test_solve_ivp(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_span = (1.0, 5.0)
         y0 = gaussian(x, t_span[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
         t, y = solve_ivp(
             heat_rhs,
             t_span=t_span,
             y0=y0,
             stepper=stepper,
-            step_size=dt,
-            args=(diffusivity, bc_left, bc_right, dx),
+            step_size=step_size,
+            params=params,
             num_checkpoints=2,
         )
 
@@ -141,16 +143,16 @@ class TestRK4:
             soln = gaussian(x, t[i], diffusivity, length)
             assert jnp.allclose(y[i], soln, atol=atol)
 
-    def test_adaptive_solve(self, heat_setup, stepper, dt, atol):
+    def test_adaptive_solve(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_eval = jnp.linspace(1.0, 5.0, 4)
         y0 = gaussian(x, t_eval[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
-        def step_size_fn(t, u, D, bc_left, bc_right, dx):
-            return dt
+        def step_size_fn(t, u, params):
+            return step_size
 
         t, y = integrate(
             heat_rhs,
@@ -158,7 +160,7 @@ class TestRK4:
             y0=y0,
             stepper=stepper,
             step_size_fn=step_size_fn,
-            args=(diffusivity, bc_left, bc_right, heat_setup["dx"]),
+            params=params,
         )
 
         for i in range(len(t)):
@@ -178,28 +180,28 @@ class TestBackwardEuler:
         return BackwardEuler(root_finder=root_finder)
 
     @pytest.fixture
-    def dt(self, heat_setup):
+    def step_size(self, heat_setup):
         return 0.5 * heat_setup["dx"] ** 2 / heat_setup["D"]
 
     @pytest.fixture
-    def atol(self, dt, heat_setup):
-        return max(dt, heat_setup["dx"] ** 2)
+    def atol(self, step_size, heat_setup):
+        return max(step_size, heat_setup["dx"] ** 2)
 
-    def test_solve_ivp(self, heat_setup, stepper, dt, atol):
+    def test_solve_ivp(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_span = (1.0, 5.0)
         y0 = gaussian(x, t_span[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
         t, y = solve_ivp(
             heat_rhs,
             t_span=t_span,
             y0=y0,
             stepper=stepper,
-            step_size=dt,
-            args=(diffusivity, bc_left, bc_right, dx),
+            step_size=step_size,
+            params=params,
             num_checkpoints=2,
         )
 
@@ -207,16 +209,16 @@ class TestBackwardEuler:
             soln = gaussian(x, t[i], diffusivity, length)
             assert jnp.allclose(y[i], soln, atol=atol)
 
-    def test_adaptive_solve(self, heat_setup, stepper, dt, atol):
+    def test_adaptive_solve(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_eval = jnp.linspace(1.0, 5.0, 4)
         y0 = gaussian(x, t_eval[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
-        def step_size_fn(t, u, D, bc_left, bc_right, dx):
-            return dt
+        def step_size_fn(t, u, params):
+            return step_size
 
         t, y = integrate(
             heat_rhs,
@@ -224,89 +226,7 @@ class TestBackwardEuler:
             y0=y0,
             stepper=stepper,
             step_size_fn=step_size_fn,
-            args=(diffusivity, bc_left, bc_right, heat_setup["dx"]),
-        )
-
-        for i in range(len(t)):
-            soln = gaussian(x, t[i], diffusivity, length)
-            assert jnp.allclose(y[i], soln, atol=atol)
-
-
-class TestIMEX:
-    """Tests for the IMEX time stepper with diffusion split equally between
-    explicit (RK4) and implicit (Backward Euler) sub-steppers."""
-
-    @pytest.fixture
-    def stepper(self):
-        linsolver = GMRES(tol=1e-8, maxiter=100)
-        root_finder = NewtonRaphson(
-            lineariser=AutoJVP(linsolver=linsolver), tol=1e-8, maxiter=20
-        )
-        return IMEX(
-            explicit=RK4(),
-            implicit=BackwardEuler(root_finder=root_finder),
-        )
-
-    @pytest.fixture
-    def fun(self):
-        """Split diffusion equally into explicit and implicit halves."""
-
-        def heat_rhs_explicit(t, u, D, bc_left, bc_right, dx):
-            return 0.5 * D * laplacian_dirichlet_1d(u, bc_left, bc_right, dx)
-
-        def heat_rhs_implicit(t, u, D, bc_left, bc_right, dx):
-            return 0.5 * D * laplacian_dirichlet_1d(u, bc_left, bc_right, dx)
-
-        return {"explicit": heat_rhs_explicit, "implicit": heat_rhs_implicit}
-
-    @pytest.fixture
-    def dt(self, heat_setup):
-        return 0.5 * heat_setup["dx"] ** 2 / heat_setup["D"]
-
-    @pytest.fixture
-    def atol(self, dt, heat_setup):
-        return max(dt, heat_setup["dx"] ** 2)
-
-    def test_solve_ivp(self, heat_setup, stepper, fun, dt, atol):
-        diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
-
-        t_span = (1.0, 5.0)
-        y0 = gaussian(x, t_span[0], diffusivity, length)
-
-        t, y = solve_ivp(
-            fun,
-            t_span=t_span,
-            y0=y0,
-            stepper=stepper,
-            step_size=dt,
-            args=(diffusivity, bc_left, bc_right, dx),
-            num_checkpoints=2,
-        )
-
-        for i in range(len(t)):
-            soln = gaussian(x, t[i], diffusivity, length)
-            assert jnp.allclose(y[i], soln, atol=atol)
-
-    def test_adaptive_solve(self, heat_setup, stepper, fun, dt, atol):
-        diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
-
-        t_eval = jnp.linspace(1.0, 5.0, 4)
-        y0 = gaussian(x, t_eval[0], diffusivity, length)
-
-        def step_size_fn(t, u, D, bc_left, bc_right, dx):
-            return dt
-
-        t, y = integrate(
-            fun,
-            t_eval=t_eval,
-            y0=y0,
-            stepper=stepper,
-            step_size_fn=step_size_fn,
-            args=(diffusivity, bc_left, bc_right, heat_setup["dx"]),
+            params=params,
         )
 
         for i in range(len(t)):
@@ -335,28 +255,28 @@ class TestSpectralBackwardEuler:
         return BackwardEuler(root_finder=root_finder)
 
     @pytest.fixture
-    def dt(self, heat_setup):
+    def step_size(self, heat_setup):
         return 0.5 * heat_setup["dx"] ** 2 / heat_setup["D"]
 
     @pytest.fixture
-    def atol(self, dt):
-        return dt
+    def atol(self, step_size):
+        return step_size
 
-    def test_solve_ivp(self, heat_setup, stepper, dt, atol):
+    def test_solve_ivp(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_span = (1.0, 5.0)
         y0 = gaussian(x, t_span[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
         t, y = solve_ivp(
             heat_rhs,
             t_span=t_span,
             y0=y0,
             stepper=stepper,
-            step_size=dt,
-            args=(diffusivity, bc_left, bc_right, dx),
+            step_size=step_size,
+            params=params,
             num_checkpoints=2,
         )
 
@@ -365,16 +285,16 @@ class TestSpectralBackwardEuler:
                 y[i], gaussian(x, t[i], diffusivity, length), atol=atol
             )
 
-    def test_adaptive_solve(self, heat_setup, stepper, dt, atol):
+    def test_adaptive_solve(self, heat_setup, stepper, step_size, atol):
         diffusivity, length = heat_setup["D"], heat_setup["L"]
-        x, dx = heat_setup["x"], heat_setup["dx"]
-        bc_left, bc_right = heat_setup["bc_left"], heat_setup["bc_right"]
+        x = heat_setup["x"]
 
         t_eval = jnp.linspace(1.0, 5.0, 4)
         y0 = gaussian(x, t_eval[0], diffusivity, length)
+        params = {k: heat_setup[k] for k in ("D", "dx", "bc_left", "bc_right")}
 
-        def step_size_fn(t, u, diffusivity, bc_left, bc_right, dx):
-            return dt
+        def step_size_fn(t, u, params):
+            return step_size
 
         t, y = integrate(
             heat_rhs,
@@ -382,7 +302,7 @@ class TestSpectralBackwardEuler:
             y0=y0,
             stepper=stepper,
             step_size_fn=step_size_fn,
-            args=(diffusivity, bc_left, bc_right, dx),
+            params=params,
         )
 
         for i in range(len(t)):

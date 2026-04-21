@@ -8,28 +8,28 @@ from jaxtyping import Array, Float
 
 @runtime_checkable
 class StepperLike(Protocol):
-    """Protocol for any object with a compatible step method."""
+    """Protocol for any object with a compatible __call__ method."""
 
-    def step(
+    def __call__(
         self,
-        fun: Any,
+        fun: Callable,
         t: Float[Array, ""],
-        y: Float[Array, "*state"],
-        h: Float[Array, ""],
-        args: tuple = (),
-    ) -> Float[Array, "*state"]: ...
+        y: Float[Array, "..."],
+        step_size: Float[Array, ""],
+        params: Any = None,
+    ) -> tuple[Float[Array, "..."], "StepperLike"]: ...
 
     """Advance the solution by one time step.
 
         Args:
-            fun: Right-hand side of the system of equations
+            fun: Right-hand side of the ODE fun(t, y, params) -> dy/dt
             t: Current time (0-dimensional JAX array)
             y: Current solution
-            h: Time step size (0-dimensional JAX array)
-            args: Additional arguments to pass to fun
+            step_size: Time step size (0-dimensional JAX array)
+            params: Parameters passed through to fun
 
         Returns:
-            Solution at t + h
+            Tuple of the new solution and stepper instance (y, stepper)
     """
 
 
@@ -37,24 +37,24 @@ class AbstractStepper(eqx.Module):
     """Base class for single-term time-stepping methods."""
 
     @abc.abstractmethod
-    def step(
+    def __call__(
         self,
-        fun: Callable[..., Float[Array, "*state"]],
+        fun: Callable,
         t: Float[Array, ""],
-        y: Float[Array, "*state"],
-        h: Float[Array, ""],
-        args: tuple = (),
-    ) -> Float[Array, "*state"]:
+        y: Float[Array, "..."],
+        step_size: Float[Array, ""],
+        params: Any = None,
+    ) -> tuple[Float[Array, "..."], "AbstractStepper"]:
         """Advance the solution by one time step.
 
         Args:
-            fun: Right-hand side function (t, y, *args) -> dy/dt
+            fun: Right-hand side function fun(t, y, params) -> dy/dt
             t: Current time (0-dimensional JAX array)
             y: Current solution
-            h: Time step size (0-dimensional JAX array)
-            args: Additional arguments to pass to fun
+            step_size: Time step size (0-dimensional JAX array)
+            params: Parameters passed through to fun
 
         Returns:
-            Solution at t + h
+            Tuple of the new solution and stepper instance (y, stepper)
         """
         raise NotImplementedError

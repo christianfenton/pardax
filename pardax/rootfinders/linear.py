@@ -39,7 +39,7 @@ class LinearRootFinder(AbstractRootFinder):
         y_guess: Float[Array, "*state"],
         fun: Any,
         t: Float[Array, ""],
-        h: Float[Array, ""],
+        step_size: Float[Array, ""],
         args: tuple,
         theta: float = 1.0,
     ) -> Float[Array, "*state"]:
@@ -47,11 +47,11 @@ class LinearRootFinder(AbstractRootFinder):
         Solve for R(y) = 0 in a single step.
 
         Args:
-            residual_fn: Residual function R(y) = y - y_n - theta * h * L(y)
+            residual_fn: Residual function R(y) = y - y_n - theta * step_size * L(y)
             y_guess: Initial guess (used for shape / initial value)
             fun: Right-hand side of system (unused)
             t: Current time
-            h: Time step size
+            step_size: Time step size
             args: Additional arguments
             theta: Implicit coefficient (see AbstractRootFinder)
 
@@ -59,5 +59,5 @@ class LinearRootFinder(AbstractRootFinder):
             Solution y such that residual_fn(y) ≈ 0
         """
         b = -residual_fn(jnp.zeros_like(y_guess))
-        A = self.operator.system(t, theta * h, args)
+        A = self.operator.system(t, theta * step_size, args)
         return self.linsolver(A, b, x0=y_guess)

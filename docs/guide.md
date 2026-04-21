@@ -1,11 +1,5 @@
 # Getting started
 
-`pardax` is a JAX-native ODE integrator for solving initial value
-problems, fully compatible with transformations like `jax.jit`,
-`jax.vmap` and `jax.grad`.
-
-## Quick start
-
 In `pardax`, users are expected to handle the spatial discretisation of
 their ODE, and `pardax` handles the rest.
 
@@ -15,8 +9,8 @@ import pardax as pdx
 
 # 1. Define your discretised PDE as an ODE
 # NOTE: must be functionally pure (JAX-compatible)
-def my_pde_rhs(t, y, *args):
-    """Right-hand side: dy/dt = f(t, y, ...)
+def my_pde_rhs(t, y, params):
+    """Right-hand side: dy/dt = f(t, y, params)
 
     Implement your spatial discretisation here.
     Handle boundary conditions within this function.
@@ -36,30 +30,19 @@ t, y = pdx.solve_ivp(
     y0=y0,
     stepper=method,
     step_size=0.001,
-    args=(...,),
+    params={...},
     num_checkpoints=10,
 )
 ```
 
-## Choosing a solver
-
-`pardax` provides two top-level integration functions.
-
-[solve_ivp][pardax.solve_ivp] divides `t_span` into equally-spaced
-segments and saves a snapshot at the end of each one. It uses
-`jax.lax.scan` internally, which makes it compatible with all JAX
-transformations including reverse-mode automatic differentiation.
-
-[integrate][pardax.integrate] advances the solution to an arbitrary
-sequence of times in `t_eval`, using a step-size callback that can
-depend on the current solution state. It uses `jax.lax.while_loop`
-internally, so it supports `jax.jit` and `jax.vmap` but only forward-mode
-automatic differentation. Use this when you need CFL-based or otherwise 
-state-dependent step sizes, or when output times are not equally spaced.
+`pardax` also provides [integrate][pardax.integrate], which takes a step-size 
+callback that can depend on the current solution state. It uses 
+`jax.lax.while_loop` internally, so does not support reverse-mode automatic
+differentiation with `jax.grad`.
 
 ```python notest
-def cfl_step_size(t, u, nu, dx):
-    return 0.5 * dx**2 / nu
+def cfl_step_size(t, u, params):
+    return 0.5 * params["dx"]**2 / params["nu"]
 
 t, y = pdx.integrate(
     fun,
@@ -67,7 +50,7 @@ t, y = pdx.integrate(
     y0=y0,
     stepper=pdx.RK4(),
     step_size_fn=cfl_step_size,
-    args=(nu, dx),
+    params={"nu": nu, "dx": dx},
 )
 ```
 
@@ -76,29 +59,13 @@ t, y = pdx.integrate(
 Because `pardax` is built on JAX and [Equinox](https://docs.kidger.site/equinox/),
 you can apply JAX transformations directly to `solve_ivp`.
 
-### JIT compilation
-
-Compile the entire integration for faster execution:
-
-```python notest
-import jax
-
-solve_jit = jax.jit(lambda y_: pdx.solve_ivp(
-    fun, t_span, y_, stepper, step_size, args
-))
-
-t, y = solve_jit(y0)
-```
-
 ### Vectorisation
-
-Integrate multiple initial conditions in parallel with `vmap`:
 
 ```python notest
 y0_batch = jnp.stack([y0_1, y0_2, y0_3])  # (batch, n)
 
 solve_batch = jax.vmap(
-    lambda y_: pdx.solve_ivp(fun, t_span, y_, stepper, step_size, args)
+    lambda y_: pdx.solve_ivp(fun, t_span, y_, stepper, step_size, params)
 )
 
 t, y_batch = solve_batch(y0_batch)
@@ -106,15 +73,24 @@ t, y_batch = solve_batch(y0_batch)
 
 ### Differentiation
 
-Differentiate through the solver for sensitivity analysis or parameter
-optimisation:
-
 ```python notest
 def loss(params):
-    t, y = pdx.solve_ivp(fun, t_span, y0, stepper, step_size, args=(params,))
+    t, y = pdx.solve_ivp(fun, t_span, y0, stepper, step_size, params=params)
     return jnp.mean((y[-1] - y_target)**2)
 
 grads = jax.grad(loss)(params)
+```
+
+### JIT compilation
+
+```python notest
+import jax
+
+solve_jit = jax.jit(lambda y_: pdx.solve_ivp(
+    fun, t_span, y_, stepper, step_size, params
+))
+
+t, y = solve_jit(y0)
 ```
 
 ## Time-stepping methods
@@ -154,26 +130,11 @@ the implicit system in a single step using a
 [Burgers' equation tutorial](tutorials/spectral_burgers.md) for an
 example.
 
-### IMEX (implicit-explicit) splitting
+### Advanced methods
 
-When a problem has both stiff and non-stiff terms, an IMEX scheme
-treats each with an appropriate method:
-
-```python notest
-rhs = {
-    "implicit": stiff_term,
-    "explicit": non_stiff_term,
-}
-
-method = pdx.IMEX(
-    implicit=pdx.BackwardEuler(root_finder=...),
-    explicit=pdx.RK4(),
-)
-
-t, y = pdx.solve_ivp(rhs, t_span, y0, method, step_size=dt, args=args)
-```
-
-This eliminates the stiff stability constraint while keeping the
-non-stiff part cheap. See the
+`pardax` is designed so that time-stepping schemes are composable,
+which allows users to implement their own schemes that treat PDE terms
+separately. See [Extending the solver](extending.md) for 
+more information or the 
 [Burgers' equation tutorial](tutorials/spectral_burgers.md) for a
-complete example.
+worked example.

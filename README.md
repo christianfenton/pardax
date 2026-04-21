@@ -49,9 +49,9 @@ pip install git+https://github.com/christianfenton/pardax.git
 ```python notest
 import pardax as pdx
 
-# 1. Define your discretised PDE as an ODE
+# 1. Define your ODE
 # NOTE: must be functionally pure (JAX-compatible)
-def my_pde_rhs(t, y, *args):
+def my_pde_fun(t: float, y: jax.Array, params: PyTree):
     """dy/dt = f(t, y, ...)"""
     ...
 
@@ -63,12 +63,12 @@ method = pdx.RK4()
 
 # 4. Integrate
 t, y = pdx.solve_ivp(
-    my_pde_rhs,
+    my_pde_fun,
     t_span=(0.0, 1.0),
     y0=y0,
     stepper=method,
     step_size=0.001,
-    args=(...,)
+    params=params
 )
 ```
 

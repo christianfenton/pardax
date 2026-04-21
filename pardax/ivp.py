@@ -10,16 +10,16 @@ from .timesteppers import StepperLike
 
 
 def solve_ivp(
-    fun: Any,
+    fun: Callable,
     t_span: tuple[float, float],
-    y0: Float[Array, "*state"],
+    y0: Float[Array, "..."],
     stepper: StepperLike,
     step_size: float,
-    args: tuple = (),
+    params: Any = None,
     num_checkpoints: int = 0,
-) -> tuple[Float[Array, " steps"], Float[Array, " steps *state"]]:
+) -> tuple[Float[Array, " steps"], Float[Array, "steps ..."]]:
     """
-    Integrate dy/dt = fun(t, y, *args) from t_span[0] to t_span[1].
+    Integrate dy/dt = fun(t, y, params) from t_span[0] to t_span[1].
 
     Uses `jax.lax.scan` internally and is compatible with all JAX
     transformations, including reverse-mode differentiation (`jax.grad`).
@@ -29,13 +29,13 @@ def solve_ivp(
     each segment, plus the initial state.
 
     Args:
-        fun: Right-hand side dy/dt = fun(t, y, *args)
+        fun: Right-hand side dy/dt = fun(t, y, params)
         t_span: Tuple of start and end time, e.g. (t_start, t_end)
         y0: Initial condition at t_span[0]
         stepper: Time-stepper instance (e.g., RK4(), BackwardEuler())
-        step_size: Maximum time step size
+        step_size: Maximum time step size.
             The actual step may be smaller to fit an integer number of steps
-        args: Additional arguments passed to fun
+        params: Parameters pytree passed to fun
         num_checkpoints: Number of equally spaced intermediate snapshots
             to store between t_start and t_end. If 0 (default),
             only the initial and final states are returned.
@@ -51,33 +51,36 @@ def solve_ivp(
     num_steps_outer = num_checkpoints + 1
     num_steps_inner = math.ceil(num_steps_total / num_steps_outer)
 
-    # Actual time step size
-    h = jnp.asarray((t_end - t_start) / num_steps_total)
+    step_size_actual = jnp.asarray((t_end - t_start) / num_steps_total)
 
     def inner(carry, _):
-        t, y, step = carry
+        t, y, num_steps, stepper = carry
 
-        t_new, y_new = jax.lax.cond(
-            step < num_steps_total,
-            lambda t, y: (t + h, stepper.step(fun, t, y, h, args)),
-            lambda t, y: (t, y),
-            t,
-            y,
+        def do_step(args):
+            t, y, stepper = args
+            y, stepper = stepper(fun, t, y, step_size_actual, params)
+            return t + step_size_actual, y, stepper
+
+        def skip(args):
+            return args
+
+        t, y, stepper = jax.lax.cond(
+            num_steps < num_steps_total, do_step, skip, (t, y, stepper)
         )
 
-        return (t_new, y_new, step + 1), None
+        return (t, y, num_steps + 1, stepper), None
 
     def outer(carry, _):
-        t, y, step = carry
+        t, y, num_steps, stepper = carry
 
-        (t, y, step), _ = jax.lax.scan(
-            inner, (t, y, step), length=num_steps_inner
+        (t, y, num_steps, stepper), _ = jax.lax.scan(
+            inner, (t, y, num_steps, stepper), length=num_steps_inner
         )
 
-        return (t, y, step), (t, y)
+        return (t, y, num_steps, stepper), (t, y)
 
     _, (t_all, y_all) = jax.lax.scan(
-        outer, (t_start, y0, 0), length=num_steps_outer
+        outer, (t_start, y0, 0, stepper), length=num_steps_outer
     )
 
     # Prepend initial state
@@ -88,34 +91,33 @@ def solve_ivp(
 
 
 def integrate(
-    fun: Any,
+    fun: Callable,
     t_eval: Float[Array, " steps"],
-    y0: Float[Array, "*state"],
+    y0: Float[Array, "..."],
     stepper: StepperLike,
     step_size_fn: Callable[..., float],
-    args: tuple = (),
-) -> tuple[Float[Array, " steps"], Float[Array, " steps *state"]]:
+    params: Any = None,
+) -> tuple[Float[Array, " steps"], Float[Array, "steps ..."]]:
     """
-    Integrate dy/dt = fun(t, y, *args), returning states at times t_eval.
+    Integrate dy/dt = fun(t, y, params), returning states at times t_eval.
 
     The time step size at each sub-step is given by
-    ``step_size_fn(t, y, *args) -> h``, which may depend on the current
-    time or solution state (e.g. a CFL condition). Steps are clipped to
-    avoid overshooting each target time.
+    ``step_size_fn(t, y, params) -> step_size``,
+    which may depend on the current time or solution (e.g. a CFL condition).
+    Steps are clipped to avoid overshooting each target time.
 
-    Uses `jax.lax.while_loop` internally. Compatible with `jax.jit`,
-    `jax.vmap`, and forward-mode differentiation (`jax.jvp`), but
-    **not** reverse-mode differentiation (`jax.grad`). Use
-    [solve_ivp][pardax.solve_ivp] when reverse-mode autodiff is required.
+    Uses `jax.lax.while_loop` internally, which is not supported by
+    reverse-mode  automatic differentiation with `jax.grad`.
+    Use [solve_ivp][pardax.solve_ivp] when reverse-mode autodiff is required.
 
     Args:
-        fun: Right-hand side dy/dt = fun(t, y, *args)
+        fun: Right-hand side dy/dt = fun(t, y, params)
         t_eval: Sorted array of output times
-        y0: Initial condition at t_eval[0]
+        y0: Initial condition at t_eval[0] (any JAX pytree)
         stepper: Time-stepper instance (e.g., RK4(), BackwardEuler())
-        step_size_fn: Callable ``(t, y, *args) -> h`` returning the
+        step_size_fn: Callable ``(t, y, params) -> dt`` returning the
             desired step size from the current state
-        args: Additional arguments passed to fun and step_size_fn
+        params: Parameters pytree passed to fun and step_size_fn
 
     Returns:
         t: Time points, shape ``(len(t_eval),)``
@@ -124,27 +126,27 @@ def integrate(
     eps = jnp.finfo(t_eval.dtype).eps
 
     def step_to_time(carry, scan_input):
-        t, y = carry
+        t, y, stepper = carry
         t_target = scan_input
 
-        def cond_fn(state):
-            t, _ = state
+        def cond_fn(s):
+            t, _, _ = s
             return t < t_target - eps
 
-        def body_fn(state):
-            t, y = state
-            h = step_size_fn(t, y, *args)
-            h = jnp.minimum(h, t_target - t)
-            h = jnp.maximum(h, 0)
-            y_new = stepper.step(fun, t, y, h, args)
-            return (t + h, y_new)
+        def body_fn(s):
+            t, y, stepper = s
+            step_size = step_size_fn(t, y, params)
+            step_size = jnp.minimum(step_size, t_target - t)
+            step_size = jnp.maximum(step_size, 0)
+            y, stepper = stepper(fun, t, y, step_size, params)
+            return (t + step_size, y, stepper)
 
-        t, y = jax.lax.while_loop(cond_fn, body_fn, (t, y))
+        t, y, stepper = jax.lax.while_loop(cond_fn, body_fn, (t, y, stepper))
 
-        return (t, y), (t, y)
+        return (t, y, stepper), (t, y)
 
     _, (t_all, y_all) = jax.lax.scan(
-        step_to_time, (t_eval[0], y0), (t_eval[1:])
+        step_to_time, (t_eval[0], y0, stepper), (t_eval[1:])
     )
 
     # Prepend initial state

@@ -11,37 +11,19 @@ A JAX-native solver for initial value problems.
 work seamlessly with JAX transformations, along with a familiar interface 
 inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
 
-Check out the [documentation page](https://christianfenton.github.io/pardax)
+Check out the [documentation](https://christianfenton.github.io/pardax)
 for more details.
 
 ## Installation
 
-[uv](https://docs.astral.sh/uv/) is recommended for installation.
-
-### Using uv
-
-With SSH:
 ```bash
-uv init my-project
-cd my-project
-uv add git+ssh://git@github.com/christianfenton/pardax.git
+pip install pardax
 ```
 
-With HTTPS:
-```bash
-uv add git+https://github.com/christianfenton/pardax.git
-```
+or with [uv](https://docs.astral.sh/uv/):
 
-### Using pip
-
-With SSH:
 ```bash
-pip install git+ssh://git@github.com/christianfenton/pardax.git
-```
-
-With HTTPS:
-```bash
-pip install git+https://github.com/christianfenton/pardax.git
+uv add pardax
 ```
 
 ## Quick start

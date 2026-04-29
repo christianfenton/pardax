@@ -8,32 +8,14 @@ inspired by [`scipy.integrate.solve_ivp`](https://docs.scipy.org/doc/scipy/refer
 
 ## Installation
 
-[uv](https://docs.astral.sh/uv/) is recommended for installation.
-
-### Using uv
-
-With SSH:
 ```bash
-uv init my-project
-cd my-project
-uv add git+ssh://git@github.com/christianfenton/pardax.git
+pip install pardax
 ```
 
-With HTTPS:
-```bash
-uv add git+https://github.com/christianfenton/pardax.git
-```
+or with [uv](https://docs.astral.sh/uv/):
 
-### Using pip
-
-With SSH:
 ```bash
-pip install git+ssh://git@github.com/christianfenton/pardax.git
-```
-
-With HTTPS:
-```bash
-pip install git+https://github.com/christianfenton/pardax.git
+uv add pardax
 ```
 
 ## Next steps
@@ -44,5 +26,4 @@ pip install git+https://github.com/christianfenton/pardax.git
 - [Extending the solver](extending.md)
 - [API reference](api.md)
 
-Read the source code on
-[GitHub](https://github.com/christianfenton/pardax).
+Read the source code on [GitHub](https://github.com/christianfenton/pardax).

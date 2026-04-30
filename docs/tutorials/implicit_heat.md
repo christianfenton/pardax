@@ -130,28 +130,31 @@ t, y = pdx.solve_ivp(
 
 ```python notest
 import matplotlib.pyplot as plt
-
-plt.style.use('seaborn-v0_8-colorblind')
-colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+import matplotlib.cm as cm
 
 fig, ax = plt.subplots(figsize=(8, 4.5), layout='tight')
+
+norm = plt.Normalize(vmin=t.min(), vmax=t.max())  # type: ignore
+cmap = cm.viridis  # type: ignore
+
 for i in range(len(t)):
-    c = colors[i]
-    ax.plot(x, y[i], marker='o', color=c, markersize=4)
+    c = cmap(norm(t[i]))
+    ax.plot(x, y[i], marker='o', color=c, markersize=4, ls='none')
     ax.plot(x, gaussian(x, t[i], D, L), ls='-', color=c, alpha=0.7)
 
-# One legend entry per time snapshot, plus a style key
-for i in range(len(t)):
-    ax.plot([], [], 'o', color=colors[i], label=f"$t = {t[i]:.1f}$")
+# Style-only legend entries in neutral grey
+grey = '0.3'
+ax.plot([], [], marker='o', ls='none', color=grey, label='Numerical')
+ax.plot([], [], ls='-', color=grey, alpha=0.7, label='Exact')
+ax.legend(fontsize=11)
 
-# Dummy entries for the style convention
-ax.plot([], [], 'ko', label='Numerical')
-ax.plot([], [], 'k-', label='Exact')
+sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label("$t$", fontsize=11)
 
-ax.legend()
-ax.set_xlabel("$x$")
-ax.set_ylabel("$u(t, x)$")
-plt.tight_layout()
+ax.set_xlabel("$x$", fontsize=11)
+ax.set_ylabel("$u(t, x)$", fontsize=11)
+
 plt.show()
 ```
 

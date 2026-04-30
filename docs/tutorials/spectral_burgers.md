@@ -161,11 +161,17 @@ def imex_step(carry, _):
 
 ```python notest
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
+
 stride = max(1, len(t_all) // 5)
+norm = plt.Normalize(vmin=t_all[0], vmax=t_all[-1])  # type: ignore
+cmap = cm.viridis  # type: ignore
+
 for i in range(0, len(t_all), stride):
-    ax.plot(x, y_all[i], label=f"$t = {t_all[i]:.1f}$")
+    ax.plot(x, y_all[i], color=cmap(norm(t_all[i])), label=f"$t = {t_all[i]:.1f}$")
+
 ax.set_xlabel("$x$")
 ax.set_ylabel("$u(t, x)$")
 ax.legend()
